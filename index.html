@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YouSquared — Collateral</title>
+<style>
+  :root {
+    --primary-text: #2D2A26;
+    --secondary-text: #6B6560;
+    --tertiary-text: #9E9892;
+    --bg: #FFFFFF;
+    --bg-primary: #F5F2EF;
+    --accent: #FF8370;
+    --surface-light: #F5F2EF;
+    --border: #E8E4E0;
+    --font: -apple-system, 'SF Pro Text', 'SF Pro Display', system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg-primary);
+    color: var(--primary-text);
+    padding: 60px 24px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 600;
+    color: var(--secondary-text); margin-bottom: 24px;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .brand::before {
+    content: ''; width: 20px; height: 20px;
+    background: var(--accent); border-radius: 6px;
+    display: inline-block;
+  }
+  h1 { font-size: 36px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.5px; }
+  .sub { font-size: 17px; color: var(--secondary-text); line-height: 1.5; margin-bottom: 40px; }
+  h2 {
+    font-size: 13px; font-weight: 500; text-transform: uppercase;
+    color: var(--tertiary-text); letter-spacing: 0.8px;
+    margin: 32px 0 14px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .card {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 22px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 12px;
+    text-decoration: none; color: var(--primary-text);
+    transition: all 0.15s ease;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateX(2px);
+    box-shadow: 0 4px 12px rgba(255, 131, 112, 0.1);
+  }
+  .card-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--surface-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .card-meta { flex: 1; min-width: 0; }
+  .card-title { font-size: 17px; font-weight: 600; margin-bottom: 2px; }
+  .card-desc { font-size: 14px; color: var(--secondary-text); line-height: 1.4; }
+  .card-arrow { color: var(--tertiary-text); font-size: 20px; flex-shrink: 0; }
+  .disabled {
+    opacity: 0.5; cursor: default; pointer-events: none;
+  }
+  .disabled:hover { transform: none; box-shadow: none; border-color: var(--border); }
+  .footer {
+    margin-top: 48px; padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px; color: var(--tertiary-text); line-height: 1.5;
+  }
+  .footer code {
+    background: var(--surface-light); padding: 2px 6px;
+    border-radius: 4px; font-size: 12px;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">YouSquared</div>
+  <h1>Collateral</h1>
+  <p class="sub">
+    Interactive prototypes, reports, and playbooks. Share links with the team,
+    with customers, or with yourself a week from now when you forgot what it looked like.
+  </p>
+
+  <h2>Prototypes</h2>
+  <div class="grid">
+    <a class="card" href="prototype/">
+      <span class="card-icon">📱</span>
+      <div class="card-meta">
+        <div class="card-title">All prototypes</div>
+        <div class="card-desc">High-fidelity mocks of iOS flows, one-off concept demos</div>
+      </div>
+      <span class="card-arrow">›</span>
+    </a>
+  </div>
+
+  <h2>Reports &amp; playbooks</h2>
+  <div class="grid">
+    <a class="card disabled">
+      <span class="card-icon">📊</span>
+      <div class="card-meta">
+        <div class="card-title">Reports</div>
+        <div class="card-desc">Coming — not yet migrated from individual repos</div>
+      </div>
+      <span class="card-arrow">›</span>
+    </a>
+    <a class="card disabled">
+      <span class="card-icon">📘</span>
+      <div class="card-meta">
+        <div class="card-title">Playbooks</div>
+        <div class="card-desc">Coming — not yet migrated from individual repos</div>
+      </div>
+      <span class="card-arrow">›</span>
+    </a>
+  </div>
+
+  <div class="footer">
+    Source: <code>github.com/strangeattractors/yousquared</code> —
+    each subdirectory maps to a URL segment (<code>/yousquared/prototype/&lt;name&gt;/</code>).
+    See <a href="https://github.com/strangeattractors/yousquared#readme" style="color:var(--accent);">README</a>
+    for how to publish a new prototype.
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YouSquared — Prototypes</title>
+<style>
+  :root {
+    --primary-text: #2D2A26;
+    --secondary-text: #6B6560;
+    --tertiary-text: #9E9892;
+    --bg: #FFFFFF;
+    --bg-primary: #F5F2EF;
+    --accent: #FF8370;
+    --surface-light: #F5F2EF;
+    --border: #E8E4E0;
+    --font: -apple-system, 'SF Pro Text', 'SF Pro Display', system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg-primary);
+    color: var(--primary-text);
+    padding: 60px 24px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .crumb {
+    font-size: 13px; color: var(--secondary-text);
+    margin-bottom: 20px;
+  }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .crumb a:hover { text-decoration: underline; }
+  h1 { font-size: 32px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.4px; }
+  .sub { font-size: 16px; color: var(--secondary-text); line-height: 1.5; margin-bottom: 36px; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .proto-card {
+    display: block;
+    padding: 24px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 14px;
+    text-decoration: none; color: inherit;
+    transition: all 0.15s ease;
+  }
+  .proto-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 131, 112, 0.12);
+  }
+  .proto-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 10px;
+  }
+  .proto-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--surface-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+  }
+  .proto-titlebox { flex: 1; min-width: 0; }
+  .proto-title { font-size: 19px; font-weight: 600; margin-bottom: 2px; }
+  .proto-date { font-size: 12px; color: var(--tertiary-text); }
+  .proto-desc { font-size: 14px; color: var(--secondary-text); line-height: 1.5; margin-bottom: 14px; }
+  .proto-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .tag {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 4px;
+    background: var(--surface-light); color: var(--secondary-text);
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .tag-ios { background: #E3F2FD; color: #1565C0; }
+  .tag-scheduling { background: #F3E5F5; color: #6A1B9A; }
+  .tag-industry { background: #FFF3E0; color: #E65100; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumb"><a href="../">YouSquared</a> &rsaquo; Prototypes</div>
+  <h1>Prototypes</h1>
+  <p class="sub">
+    High-fidelity web mocks of YouSquared iOS flows. Click through to interact —
+    each one is a self-contained HTML demo, no login needed.
+  </p>
+
+  <div class="grid">
+    <a class="proto-card" href="industry-auto-config/">
+      <div class="proto-head">
+        <span class="proto-icon">✦</span>
+        <div class="proto-titlebox">
+          <div class="proto-title">Industry auto-config</div>
+          <div class="proto-date">Latest: Apr 17, 2026 · products &amp; services sub-fields</div>
+        </div>
+      </div>
+      <div class="proto-desc">
+        Industry picker → auto-prefilled Company Info → per-industry sub-field schemas,
+        AI Scheduling, and Secretary Settings with scenarios &amp; voice input. Covers pharmacy,
+        dental, real estate, and equipment rental.
+      </div>
+      <div class="proto-tags">
+        <span class="tag tag-ios">iOS</span>
+        <span class="tag tag-industry">Industry auto-config</span>
+      </div>
+    </a>
+
+    <a class="proto-card" href="scheduled-outbound/">
+      <div class="proto-head">
+        <span class="proto-icon">📅</span>
+        <div class="proto-titlebox">
+          <div class="proto-title">Scheduled outbound &amp; contact events</div>
+          <div class="proto-date">Earlier drop</div>
+        </div>
+      </div>
+      <div class="proto-desc">
+        Concept demo of scheduling AI-driven outbound calls/texts tied to contact lifecycle
+        events (renewals, follow-ups, anniversaries).
+      </div>
+      <div class="proto-tags">
+        <span class="tag tag-ios">iOS</span>
+        <span class="tag tag-scheduling">Scheduling</span>
+      </div>
+    </a>
+  </div>
+</div>
+</body>
+</html>
