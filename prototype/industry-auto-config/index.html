@@ -262,6 +262,7 @@ const INDUSTRIES={
   residential:{
     id:"residential",
     label:"Residential Agent",
+    general:{company:"Acme Realty",job_title:"Licensed Realtor",goes_by:"James"},
     items_label:"Listing",
     items_label_plural:"Active Listings",
     subfields:[
@@ -309,6 +310,7 @@ const INDUSTRIES={
   medical:{
     id:"medical",
     label:"Medical / Dental",
+    general:{company:"Lakeside Family Practice",job_title:"Family Physician",goes_by:"Dr. Kim"},
     items_label:"Service",
     items_label_plural:"Services Offered",
     subfields:[
@@ -359,6 +361,7 @@ const INDUSTRIES={
   equipment_rental:{
     id:"equipment_rental",
     label:"Equipment Rental",
+    general:{company:"Summit Equipment Rentals",job_title:"Operations Manager",goes_by:"Dave"},
     items_label:"Item",
     items_label_plural:"Rental Inventory",
     subfields:[
@@ -408,6 +411,7 @@ const INDUSTRIES={
   pharmacy:{
     id:"pharmacy",
     label:"Pharmacy",
+    general:{company:"Wellness Care Pharmacy",job_title:"Lead Pharmacist",goes_by:"Dr. Sarah"},
     items_label:"Product",
     items_label_plural:"Products & Services",
     subfields:[
@@ -447,6 +451,7 @@ const INDUSTRIES={
   gastroenterology:{
     id:"gastroenterology",
     label:"Gastroenterology",
+    general:{company:"Metro GI Associates",job_title:"Gastroenterologist",goes_by:"Dr. Chen"},
     items_label:"Procedure",
     items_label_plural:"Procedures Offered",
     subfields:[
@@ -511,6 +516,7 @@ const INDUSTRIES={
   surgery:{
     id:"surgery",
     label:"Surgery",
+    general:{company:"Metro Surgical Associates",job_title:"Surgeon",goes_by:"Dr. Lee"},
     items_label:"Procedure",
     items_label_plural:"Procedures Offered",
     subfields:[
@@ -659,14 +665,15 @@ function NavHeader({title}){
   );
 }
 
-function GeneralCard({industryName,onChangeIndustry}){
+function GeneralCard({industry,industryName,onChangeIndustry}){
+  const g=industry.general||{company:"Your company",job_title:"Your title",goes_by:"Your name"};
   return(
     <>
       <div className="section-header">General</div>
       <div className="card">
         <div className="row">
           <div className="row-label">Company name</div>
-          <div className="row-value">Acme Realty</div>
+          <div className="row-value">{g.company}</div>
         </div>
         <div className="row-divider"/>
         <div className="settings-row" style={{cursor:"pointer"}} onClick={()=>{}}>
@@ -676,12 +683,12 @@ function GeneralCard({industryName,onChangeIndustry}){
         <div className="row-divider"/>
         <div className="row">
           <div className="row-label">Job title</div>
-          <div className="row-value">Licensed Realtor</div>
+          <div className="row-value">{g.job_title}</div>
         </div>
         <div className="row-divider"/>
         <div className="row">
           <div className="row-label">At work goes by</div>
-          <div className="row-value">James</div>
+          <div className="row-value">{g.goes_by}</div>
         </div>
         <div className="row-divider"/>
         <div className="industry-row" onClick={onChangeIndustry} style={{cursor:onChangeIndustry?"pointer":"default"}}>
@@ -1666,6 +1673,7 @@ function CompanyInfoScreen({industry,onChangeIndustry}){
       <NavHeader title="Company info"/>
       <div className="screen-content">
         <GeneralCard
+          industry={industry}
           industryName={industry.label}
           onChangeIndustry={onChangeIndustry?()=>setShowIndustryPicker(true):undefined}
         />
