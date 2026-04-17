@@ -937,10 +937,11 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
   const [activeSpecialty,setActiveSpecialty]=useState(null);
 
   // Sample item = default seed that hasn't had its name replaced yet.
-  // When _sample is still truthy AND the name matches the original sample name, show nudges.
+  // Nudge also shows when adding a brand-new item with an empty name.
   const isSample=!!initialItem?._sample && (draft.name||"")===(initialItem?.name||"");
   const hints=industry.specialty_hints;
-  const showNudges=!!hints && isSample;
+  const isNameEmpty=!(draft.name||"").trim();
+  const showNudges=!!hints && (isSample || (isNew && isNameEmpty));
   const specialties=hints?Object.keys(hints).filter(k=>!k.startsWith("_")):[];
   const fillName=(name)=>{
     setDraft(prev=>({...prev,name,_sample:false}));
