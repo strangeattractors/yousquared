@@ -977,8 +977,9 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
     <div className="phone">
       <StatusBar/>
       <div className="nav-header">
+        <button className="back-btn" aria-label="Back" onClick={tryDismiss}>‹</button>
         <div className="nav-title">{title}</div>
-        <button className="dismiss-btn" aria-label="Close" onClick={tryDismiss}>×</button>
+        <button className="editable-toolbar-save" style={{position:"absolute",right:"var(--normal)",top:10}} onClick={()=>onSave(draft)}>Save</button>
       </div>
       <div className="screen-content">
         {isDraft&&(
@@ -1070,20 +1071,15 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
           </>
         )}
       </div>
-      <div className="detail-bottom">
-        {isNew?(
-          <button className="btn-primary" onClick={()=>onSave(draft)}>Save {itemLabel.toLowerCase()}</button>
-        ):(
-          <>
-            <button className="btn-destructive" onClick={()=>setShowDelete(true)}>Delete</button>
-            <button className="btn-tertiary" onClick={()=>onSave(draft)}>Edit {itemLabel.toLowerCase()}</button>
-          </>
-        )}
-      </div>
+      {!isNew&&(
+        <div className="detail-bottom">
+          <button className="btn-destructive" onClick={()=>setShowDelete(true)}>Delete</button>
+        </div>
+      )}
       {showDiscard&&(
         <ConfirmSheet
           title="Unsaved changes"
-          description={isNew?"Tap Save to keep your changes.":"Tap Edit to save your changes."}
+          description="Tap Save to keep your changes."
           confirmLabel="Discard"
           onConfirm={()=>{setShowDiscard(false);onCancel()}}
           onCancel={()=>setShowDiscard(false)}
