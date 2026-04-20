@@ -68,6 +68,22 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 /* Draft tag */
 .tag-draft{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;font-size:11px;font-weight:600;background:var(--draft-blue-bg);color:var(--blue)}
+.tag-sample{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;font-size:10px;font-weight:600;background:var(--surface-darken);color:var(--secondary-text);text-transform:uppercase;letter-spacing:.4px}
+
+/* ── Edit-view specialty nudge (hint banner + suggestion chips) ── */
+.nudge-banner{display:flex;align-items:flex-start;gap:10px;margin:0 var(--normal) 8px;padding:10px 12px;background:linear-gradient(135deg,#FFF5F3 0%,#FFF0ED 100%);border:1px solid #FFD4CC;border-radius:var(--r-lg);font-size:13px;color:var(--primary-text);line-height:1.4}
+.nudge-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.nudge-text strong{font-weight:600}
+.specialty-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px var(--normal) 0}
+.spec-chip{padding:4px 10px;border-radius:var(--r-xxl);background:var(--surface-darken);border:.5px solid var(--border);font-size:12px;font-weight:500;color:var(--primary-text);cursor:pointer;font-family:inherit}
+.spec-chip:hover{background:var(--surface-light);border-color:var(--accent)}
+.spec-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.proc-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px var(--normal) 0;animation:fadeIn .2s ease}
+.proc-chip{padding:4px 10px;border-radius:var(--r-xxl);background:var(--bg);border:1px dashed var(--border);font-size:12px;color:var(--secondary-text);cursor:pointer;font-family:inherit}
+.proc-chip:hover{border-color:var(--accent);color:var(--primary-text);border-style:solid}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.spin-icon{animation:spin 1.2s linear infinite;transform-origin:center}
 
 /* Text input inline (matches SectionTextFieldView) */
 .inline-input{padding:4px 0 0;background:transparent;border:none;outline:none;width:100%;font-size:17px;color:var(--primary-text);font-family:inherit;resize:none}
@@ -248,6 +264,7 @@ const INDUSTRIES={
   residential:{
     id:"residential",
     label:"Residential Agent",
+    general:{company:"Acme Realty",job_title:"Licensed Realtor",goes_by:"James"},
     items_label:"Listing",
     items_label_plural:"Active Listings",
     subfields:[
@@ -295,6 +312,7 @@ const INDUSTRIES={
   medical:{
     id:"medical",
     label:"Medical / Dental",
+    general:{company:"Lakeside Family Practice",job_title:"Family Physician",goes_by:"Dr. Kim"},
     items_label:"Service",
     items_label_plural:"Services Offered",
     subfields:[
@@ -345,6 +363,7 @@ const INDUSTRIES={
   equipment_rental:{
     id:"equipment_rental",
     label:"Equipment Rental",
+    general:{company:"Summit Equipment Rentals",job_title:"Operations Manager",goes_by:"Dave"},
     items_label:"Item",
     items_label_plural:"Rental Inventory",
     subfields:[
@@ -394,27 +413,32 @@ const INDUSTRIES={
   pharmacy:{
     id:"pharmacy",
     label:"Pharmacy",
+    general:{company:"Wellness Care Pharmacy",job_title:"Lead Pharmacist",goes_by:"Dr. Sarah"},
     items_label:"Product",
     items_label_plural:"Products & Services",
     subfields:[
       {key:"name",label:"Product Name",type:"text"},
       {key:"description",label:"Description",type:"multiline"},
-      {key:"price",label:"Price",type:"text"},
       {key:"dosage",label:"Dosage / Form",type:"text"},
-      {key:"availability_note",label:"Availability Note",type:"text"},
+      {key:"inventory",label:"Inventory",type:"text",placeholder:"e.g. 120 ct"},
+      {key:"purchase_type",label:"Purchase Type",type:"select",options:["one-time","subscription"]},
+      {key:"subscription_duration",label:"Subscription Duration",type:"select",options:["1 month","2 months","3 months","4 months","5 months","6 months"],allowCustom:true,customUnit:"months",customPlaceholder:"e.g. 12",showIf:{key:"purchase_type",value:"subscription"}},
     ],
     default_items:[
-      {name:"Generic acetaminophen",description:"Pain reliever (500mg)",price:"$7.99 / 100 ct",dosage:"500mg tablet",availability_note:"In stock"},
-      {name:"Generic ibuprofen",description:"Anti-inflammatory (200mg)",price:"$6.49 / 100 ct",dosage:"200mg tablet",availability_note:"In stock"},
+      {name:"Generic acetaminophen",description:"Pain reliever (500mg)",dosage:"500mg tablet",inventory:"",purchase_type:"one-time",subscription_duration:""},
+      {name:"Generic ibuprofen",description:"Anti-inflammatory (200mg)",dosage:"200mg tablet",inventory:"",purchase_type:"one-time",subscription_duration:""},
+      {name:"Compounded hormone cream",description:"Estradiol 0.05% cream. Compounded on request — typical lead time 1-2 weeks.",dosage:"Topical 30g jar",inventory:"",purchase_type:"subscription",subscription_duration:"3 months"},
     ],
     itemTitle:it=>(it.name||"").trim()||"Untitled product",
     itemSummary:it=>{
       const name=(it.name||"").trim();
       if(!name)return"Tap to add details";
-      return[it.dosage,it.price].filter(Boolean).join(" · ");
+      const parts=[it.dosage];
+      if(it.purchase_type==="subscription"&&it.subscription_duration)parts.push(`subscription · ${it.subscription_duration}`);
+      else if(it.purchase_type)parts.push(it.purchase_type);
+      return parts.filter(Boolean).join(" · ");
     },
     business_labels:{
-      pricing:"Pricing",
       geography_served:"Service Areas",
       hours_of_operation:"Pharmacy Hours",
     },
@@ -424,10 +448,159 @@ const INDUSTRIES={
     },
     business_draft_keys:[],
     scheduling:null, // Pharmacy doesn't expose AI scheduling.
+    csv_sync:{
+      title:"Catalog Sync",
+      cta_label:"Upload catalog CSV",
+      description:"Upload a CSV from your pharmacy system to skip manual entry for large catalogs. Our AI auto-maps the columns. Re-upload when your catalog changes.",
+      requires_sales_contact:true,
+      sales_gated_title:"Talk to us to enable",
+      sales_gated_subtitle:"A data agreement is required before upload.",
+      sales_cta_label:"Talk to us",
+      mock_product_count:10284,
+      mock_columns_mapped:["product_name → Name","sku → ID","on_hand → Inventory","price → Price","ndc → NDC code","dosage_form → Dosage"],
+    },
     auto_config_scenarios:[
       {id:"ps1",direction:"outbound",condition:"If patient's purchase is in 2 days",instructions:"Text a refill reminder and confirm delivery address.",auto:true,rel:"patient",event:"purchase",timing:"in 2 days",action:"text"},
       {id:"ps2",direction:"outbound",condition:"If patient's delivery completed next day",instructions:"Text next day to check delivery arrived safely and answer any questions.",auto:true,rel:"patient",event:"delivery",timing:"next day",action:"text"},
       {id:"ps3",direction:"outbound",condition:"If prospect's lead is next day",instructions:"Follow up on new inquiry the next day to help them get started.",auto:false,rel:"prospect",event:"lead",timing:"next day",action:"text"},
+    ],
+  },
+  gastroenterology:{
+    id:"gastroenterology",
+    label:"Gastroenterology",
+    general:{company:"Metro GI Associates",job_title:"Gastroenterologist",goes_by:"Dr. Chen"},
+    items_label:"Procedure",
+    items_label_plural:"Procedures Offered",
+    subfields:[
+      {key:"name",label:"Procedure Name",type:"text"},
+      {key:"description",label:"Description",type:"multiline"},
+      {key:"cpt",label:"CPT Code",type:"text"},
+      {key:"duration_min",label:"Duration (min)",type:"text"},
+      {key:"sedation",label:"Sedation Type",type:"text"},
+      {key:"prep_required",label:"Prep Required",type:"multiline"},
+      {key:"escort_required",label:"Transport Escort Required",type:"text"},
+      {key:"price",label:"Price (self-pay)",type:"text"},
+      {key:"suite",label:"Endoscopy Suite",type:"text"},
+      {key:"provider_hours",label:"Provider Hours",type:"text"},
+    ],
+    default_items:[
+      {_sample:true,name:"Short outpatient procedure",description:"Brief diagnostic scope with sedation",cpt:"—",duration_min:"30",sedation:"Moderate",prep_required:"Clear liquids 24h before; NPO after midnight",escort_required:"Yes",price:"—",suite:"GI Lab Room 1",provider_hours:"Mon–Fri 7am–3pm",referral_required:true,ai_intake_checklist:["Referral document number","Symptoms + duration","Prior GI history","Anticoagulant / blood thinner status","Fasting tolerance","Insurance + transport escort","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:30},
+      {_sample:true,name:"Day procedure w/ full prep",description:"Diagnostic + therapeutic, full bowel prep required",cpt:"—",duration_min:"45",sedation:"Moderate to MAC",prep_required:"Bowel prep per kit; NPO after midnight; hold anticoagulants per MD",escort_required:"Yes — responsible adult required",price:"—",suite:"GI Lab Room 2",provider_hours:"Mon–Fri 7am–3pm",referral_required:true,ai_intake_checklist:["Referral document number","Symptoms + duration","Prior GI history (last scope, polyps found)","Anticoagulant / blood thinner status","Bowel prep feasibility (renal / heart issues)","Insurance + transport escort","Diet 3 days prior: low-fiber tolerance","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:45},
+      {_sample:true,name:"Upper endoscopy",description:"Diagnostic upper GI scope",cpt:"—",duration_min:"20",sedation:"Moderate",prep_required:"NPO 8 hours",escort_required:"Yes",price:"—",suite:"GI Lab Room 1",provider_hours:"Mon–Fri 7am–3pm",referral_required:true,ai_intake_checklist:["Referral document number","Symptoms + duration","Dentures / loose teeth","Anticoagulant / blood thinner status","NPO tolerance","Insurance + transport escort","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:30},
+    ],
+    itemTitle:it=>(it.name||"").trim()||"Untitled procedure",
+    itemSummary:it=>{
+      const name=(it.name||"").trim();
+      if(!name)return"Tap to add details";
+      return[it.duration_min&&`${it.duration_min}min`,it.sedation,it.price].filter(x=>x&&x!=="—").join(" · ")||"Tap to fill in details";
+    },
+    business_labels:{
+      pricing:"Pricing",
+      geography_served:"Service Areas",
+      hours_of_operation:"Clinic Hours",
+    },
+    business_defaults:{
+      geography_served:"Greater metro area",
+      hours_of_operation:"Mon–Fri 7am–5pm",
+    },
+    business_draft_keys:["pricing"],
+    booking_mode:"triage_gated",
+    scheduling:{
+      event_type_label:"Endoscopy",
+      event_type_plural:"endoscopies",
+      duration_unit:"min",
+      duration_presets:[15,20,30,45,60,90],
+      duration_default:30,
+      allow_ai_booking_default:true,
+      location_source_subfield:"suite",
+      availability_source_subfield:"provider_hours",
+    },
+    specialty_hints:{
+      _placeholder:"e.g. Screening colonoscopy, EGD with biopsy, ERCP",
+      "General GI":["Screening colonoscopy","Surveillance colonoscopy","EGD","EGD with biopsy","Flexible sigmoidoscopy"],
+      "Hepatology":["ERCP","EUS","EUS-FNA","Paracentesis","Variceal band ligation"],
+      "IBD":["Colonoscopy with biopsies","Pouchoscopy","Balloon dilation","Ileoscopy"],
+      "Advanced / Therapeutic":["ERCP with sphincterotomy","ESD","EMR","Capsule endoscopy","Motility study"],
+    },
+    auto_config_scenarios:[
+      {id:"gi0",direction:"inbound",condition:"If a referral is received or caller requests an endoscopy",instructions:"Run the AI intake checklist and offer currently-available slots so the caller can express preferred slot(s). Add intake + preferred slots to the clinician-review queue. Do NOT confirm any slot — clinician decides based on priority + patient preference.",auto:true,rel:"patient",event:"lead",timing:"instantly",action:"text"},
+      {id:"gi_approval",direction:"outbound",condition:"If clinician approves a slot for a queued patient",instructions:"Outbound text/call the patient with the approved slot. If the clinician's choice differs from the patient's preference, briefly explain and offer one alternative. Patient confirms or declines.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
+      {id:"gi_decline",direction:"inbound",condition:"If patient declines the approved slot",instructions:"Re-add to the clinician-review queue with a note (e.g. declined: timing, transport). No AI auto-rebooking — clinician picks the next slot.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
+      {id:"gi1",direction:"outbound",condition:"If endoscopy slot opens in next 48h",instructions:"(Cancellation backfill) Text waitlist patients in clinician-assigned priority order. First YES is handed off to staff for confirmation — no AI auto-booking.",auto:true,rel:"patient",event:"open slot",timing:"in 48h",action:"text"},
+      {id:"gi2",direction:"outbound",condition:"If patient's surveillance is overdue",instructions:"Urgent text to rebook; escalate to physician if no response in 48h.",auto:true,rel:"patient",event:"surveillance",timing:"overdue",action:"text"},
+      {id:"gi3",direction:"outbound",condition:"If patient's procedure is in 48h",instructions:"Pre-op confirmation: NPO started, bowel prep, anticoagulant hold, transport confirmed.",auto:true,rel:"patient",event:"procedure",timing:"in 48h",action:"text"},
+      {id:"gi4",direction:"outbound",condition:"If patient's procedure completed next day",instructions:"Post-op check; book pathology follow-up if indicated.",auto:true,rel:"patient",event:"procedure",timing:"next day",action:"text"},
+      {id:"gi5",direction:"outbound",condition:"If patient's screening is due in 6 months",instructions:"Text reminder to schedule screening endoscopy.",auto:false,rel:"patient",event:"screening",timing:"in 6 months",action:"text"},
+      {id:"gi6",direction:"outbound",condition:"If patient's pathology is abnormal",instructions:"Call to schedule surveillance at recommended interval.",auto:true,rel:"patient",event:"pathology",timing:"instantly",action:"call"},
+    ],
+  },
+  surgery:{
+    id:"surgery",
+    label:"Surgery",
+    general:{company:"Metro Surgical Associates",job_title:"Surgeon",goes_by:"Dr. Lee"},
+    items_label:"Procedure",
+    items_label_plural:"Procedures Offered",
+    subfields:[
+      {key:"name",label:"Procedure Name",type:"text"},
+      {key:"description",label:"Description",type:"multiline"},
+      {key:"cpt",label:"CPT Code",type:"text"},
+      {key:"duration_hr",label:"OR Duration (hours)",type:"text"},
+      {key:"anesthesia",label:"Anesthesia Type",type:"text"},
+      {key:"length_of_stay",label:"Expected Length of Stay",type:"text"},
+      {key:"preop_requirements",label:"Pre-op Requirements",type:"multiline"},
+      {key:"followup_interval",label:"Post-op Follow-up Interval",type:"text"},
+      {key:"or_room",label:"OR Room",type:"text"},
+      {key:"surgeon_hours",label:"Surgeon Hours",type:"text"},
+    ],
+    default_items:[
+      {_sample:true,name:"Consultation",description:"New patient consultation + workup review",cpt:"—",duration_hr:"0.5",anesthesia:"N/A",length_of_stay:"Clinic visit",preop_requirements:"Bring imaging, labs, referral letter",followup_interval:"Per clinical plan",or_room:"Clinic",surgeon_hours:"Mon–Thu 8am–4pm",referral_required:true,ai_intake_checklist:["Referral document number","Symptoms + duration","Relevant imaging / labs / records","Prior surgeries","Current meds + anticoagulants","Insurance + transport","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:1},
+      {_sample:true,name:"Short outpatient procedure",description:"Minor procedure, local/MAC",cpt:"—",duration_hr:"1",anesthesia:"Local / MAC",length_of_stay:"Same-day",preop_requirements:"NPO 6h; cardiac clearance if indicated",followup_interval:"1–2 weeks",or_room:"Ambulatory OR",surgeon_hours:"Mon–Thu 8am–4pm",referral_required:true,ai_intake_checklist:["Referral document number","Surgical indication confirmed","NPO feasibility (6h)","Cardiac clearance if indicated","Current meds + anticoagulants","Insurance + transport escort","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:1},
+      {_sample:true,name:"Day procedure w/ general anesthesia",description:"Outpatient surgery, general anesthesia",cpt:"—",duration_hr:"2",anesthesia:"General",length_of_stay:"Same-day or 1 night",preop_requirements:"NPO after midnight; anticoagulant hold; pre-op labs within 30 days",followup_interval:"1–2 weeks, then 3 months",or_room:"Ambulatory OR",surgeon_hours:"Mon–Thu 8am–4pm",referral_required:true,ai_intake_checklist:["Referral document number","Surgical indication confirmed","Pre-op labs (within 30 days)","Anticoagulant hold plan","NPO after midnight feasibility","Cardiac clearance status","Transport escort (required for general)","Insurance + preauth status","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:2},
+      {_sample:true,name:"Major procedure (inpatient)",description:"Major resection with hospital stay",cpt:"—",duration_hr:"4",anesthesia:"General",length_of_stay:"3–5 days",preop_requirements:"Pre-op labs, imaging review, cardiac clearance, anesthesia eval; tumor board if oncologic",followup_interval:"2 weeks, 3 months, then per surveillance plan",or_room:"Main OR",surgeon_hours:"Mon–Thu 8am–4pm",referral_required:true,ai_intake_checklist:["Referral document number","Tumor board / multi-disciplinary review (if oncologic)","Pre-op labs + imaging review","Cardiac clearance + anesthesia eval","Anticoagulant management plan","Discharge planning / social work","Insurance + preauth status","Hospital admission coordination","Preferred appointment slot(s) from available calendar"],allow_ai_booking:false,event_duration:4},
+    ],
+    itemTitle:it=>(it.name||"").trim()||"Untitled procedure",
+    itemSummary:it=>{
+      const name=(it.name||"").trim();
+      if(!name)return"Tap to add details";
+      return[it.duration_hr&&`${it.duration_hr}hr`,it.anesthesia,it.length_of_stay].filter(x=>x&&x!=="N/A").join(" · ")||"Tap to fill in details";
+    },
+    business_labels:{
+      geography_served:"Service Areas",
+      hours_of_operation:"Clinic Hours",
+    },
+    business_defaults:{
+      geography_served:"Greater metro area — referrals from all local hospitals",
+      hours_of_operation:"Clinic: Mon–Thu 8am–4pm · OR days: variable",
+    },
+    business_draft_keys:[],
+    booking_mode:"triage_gated",
+    scheduling:{
+      event_type_label:"OR slot",
+      event_type_plural:"surgeries",
+      duration_unit:"hr",
+      duration_presets:[0.5,1,2,3,4,6,8],
+      duration_default:2,
+      allow_ai_booking_default:false,
+      location_source_subfield:"or_room",
+      availability_source_subfield:"surgeon_hours",
+    },
+    specialty_hints:{
+      _placeholder:"e.g. Thyroidectomy, Breast reduction, Parotidectomy",
+      "Head & Neck":["Thyroidectomy","Parathyroidectomy","Parotidectomy","Neck dissection","Laryngoscopy","Tracheostomy"],
+      "Breast":["Lumpectomy + SLN biopsy","Mastectomy","Reduction mammoplasty","Lymph node biopsy","Breast reconstruction"],
+      "Plastic":["Breast augmentation","Breast reduction","Abdominoplasty","Rhinoplasty","Blepharoplasty","Facelift"],
+      "General Surg Onc":["Colorectal resection","Hepatic resection","Pancreaticoduodenectomy (Whipple)","Staging laparoscopy","Thyroidectomy","Lumpectomy + SLN biopsy"],
+      "Orthopedic":["Total knee replacement","Rotator cuff repair","ACL reconstruction","Spine fusion","Carpal tunnel release"],
+    },
+    auto_config_scenarios:[
+      {id:"sx6",direction:"outbound",condition:"If referral received",instructions:"Text referred patient within 24h. Run the AI intake checklist and offer currently-available slots so the patient can express preferred slot(s). Add intake + preferred slots to the surgeon-review queue. Do NOT confirm any slot — surgeon decides based on priority + patient preference.",auto:true,rel:"patient",event:"referral",timing:"next day",action:"text"},
+      {id:"sx_approval",direction:"outbound",condition:"If surgeon approves a slot for a queued patient",instructions:"Outbound text/call the patient with the approved slot. If the surgeon's choice differs from the patient's preference, briefly explain and offer one alternative. Patient confirms or declines.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
+      {id:"sx_decline",direction:"inbound",condition:"If patient declines the approved slot",instructions:"Re-add to the surgeon-review queue with a note (e.g. declined: timing, transport). No AI auto-rebooking — surgeon picks the next slot.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
+      {id:"sx1",direction:"outbound",condition:"If OR slot is cancelled same-week",instructions:"(Cancellation backfill) Reach pre-op-ready waitlist patients in surgeon-assigned priority order. First YES is handed off to staff for confirmation — no AI auto-booking.",auto:true,rel:"patient",event:"open slot",timing:"in 7 days",action:"text"},
+      {id:"sx2",direction:"outbound",condition:"If patient's follow-up is overdue",instructions:"Urgent recall; escalate to surgeon if no response in 48h.",auto:true,rel:"patient",event:"follow-up",timing:"overdue",action:"call"},
+      {id:"sx3",direction:"outbound",condition:"If patient's surgery is in 72h",instructions:"Pre-op confirmation: NPO, meds, clearance labs, arrival time, transport.",auto:true,rel:"patient",event:"surgery",timing:"in 72h",action:"text"},
+      {id:"sx4",direction:"outbound",condition:"If patient's surgery completed next day",instructions:"Post-op day 1: pain, complications, discharge plan.",auto:true,rel:"patient",event:"surgery",timing:"next day",action:"call"},
+      {id:"sx5",direction:"outbound",condition:"If patient's clearance is in 2 weeks",instructions:"Confirm all pre-op requirements (labs, clearance, imaging) are in.",auto:false,rel:"patient",event:"clearance",timing:"in 2 weeks",action:"text"},
     ],
   },
 };
@@ -474,10 +647,14 @@ const emptyScenario=()=>({
 });
 
 const emptyItem=(industry)=>({
-  ...Object.fromEntries(industry.subfields.map(f=>[f.key,""])),
+  ...Object.fromEntries(industry.subfields.map(f=>[f.key,f.default!==undefined?f.default:(f.type==="toggle"?false:"")])),
   ...(industry.scheduling?{
     allow_ai_booking:industry.scheduling.allow_ai_booking_default,
     event_duration:industry.scheduling.duration_default,
+  }:{}),
+  ...(industry.booking_mode==="triage_gated"?{
+    referral_required:true,
+    ai_intake_checklist:[],
   }:{}),
 });
 
@@ -485,7 +662,7 @@ const emptyItem=(industry)=>({
 // Leaves reference INDUSTRIES keys; unresolved ids are filtered out.
 const INDUSTRY_TREE=[
   {id:"real_estate",name:"Real Estate",children:["residential"]},
-  {id:"healthcare",name:"Healthcare",children:["medical","pharmacy"]},
+  {id:"healthcare",name:"Healthcare",children:["medical","pharmacy","gastroenterology","surgery"]},
   {id:"construction",name:"Construction & Engineering",children:["equipment_rental"]},
 ];
 
@@ -516,14 +693,15 @@ function NavHeader({title}){
   );
 }
 
-function GeneralCard({industryName,onChangeIndustry}){
+function GeneralCard({industry,industryName,onChangeIndustry}){
+  const g=industry.general||{company:"Your company",job_title:"Your title",goes_by:"Your name"};
   return(
     <>
       <div className="section-header">General</div>
       <div className="card">
         <div className="row">
           <div className="row-label">Company name</div>
-          <div className="row-value">Acme Realty</div>
+          <div className="row-value">{g.company}</div>
         </div>
         <div className="row-divider"/>
         <div className="settings-row" style={{cursor:"pointer"}} onClick={()=>{}}>
@@ -533,12 +711,12 @@ function GeneralCard({industryName,onChangeIndustry}){
         <div className="row-divider"/>
         <div className="row">
           <div className="row-label">Job title</div>
-          <div className="row-value">Licensed Realtor</div>
+          <div className="row-value">{g.job_title}</div>
         </div>
         <div className="row-divider"/>
         <div className="row">
           <div className="row-label">At work goes by</div>
-          <div className="row-value">James</div>
+          <div className="row-value">{g.goes_by}</div>
         </div>
         <div className="row-divider"/>
         <div className="industry-row" onClick={onChangeIndustry} style={{cursor:onChangeIndustry?"pointer":"default"}}>
@@ -650,10 +828,14 @@ function ItemRow({item,industry,onOpen}){
   const title=industry.itemTitle(item);
   const summary=industry.itemSummary(item);
   const isEmpty=title.startsWith("Untitled ");
+  const isSample=!!item._sample;
   return(
     <div className="item-row" onClick={onOpen}>
       <div className="item-row-content">
-        <div className={`item-row-title ${isEmpty?"empty":""}`}>{title}</div>
+        <div className={`item-row-title ${isEmpty?"empty":""}`} style={{display:"flex",alignItems:"center",gap:8}}>
+          <span>{title}</span>
+          {isSample&&<span className="tag-sample">Sample</span>}
+        </div>
         <div className="item-row-subtitle">{summary}</div>
       </div>
       <span className="chevron">›</span>
@@ -687,6 +869,122 @@ function ProductsServicesSectionList({items,industry,isDraft,onOpenItem,onAddIte
           <span className="plus-icon">＋</span> Add {itemLabel}
         </button>
       </div>
+    </>
+  );
+}
+
+// ── Catalog Sync section (industry-specific; CSV bulk upload) ──
+// Phases: gated (if requires_sales_contact) → disconnected → parsing (1.5s) → connected.
+// "gated" blocks upload until user contacts sales (mimics real BAA/data-agreement requirement).
+// A subtle "Skip for demo" action inside the sales sheet advances to disconnected for prototyping.
+// Populates Products & Services in bulk for users with large catalogs (e.g. pharmacy 10K drugs).
+function CatalogSyncSection({industry}){
+  const csvSync=industry.csv_sync;
+  const [syncStatus,setSyncStatus]=useState(null);
+  const [salesApproved,setSalesApproved]=useState(!csvSync?.requires_sales_contact);
+  const [showInfo,setShowInfo]=useState(false);
+  if(!csvSync)return null;
+
+  const startUpload=()=>{
+    setSyncStatus({phase:"parsing"});
+    setTimeout(()=>{
+      setSyncStatus({phase:"connected",uploadedAt:Date.now(),count:csvSync.mock_product_count||0});
+    },1500);
+  };
+  const disconnect=()=>setSyncStatus(null);
+  const phase=syncStatus?.phase||(salesApproved?"disconnected":"gated");
+  const title=csvSync.title||"Catalog Sync";
+
+  return(
+    <>
+      <div className="section-header">
+        {title}
+        <button className="section-info" aria-label={`About ${title}`} onClick={()=>setShowInfo(true)}>ⓘ</button>
+      </div>
+      <div className="card" style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+        {phase==="gated"&&(
+          <>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {/* Solar "Shield" — mirrors iOS Image("shield") for data-protection gating */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,color:"var(--accent)"}}>
+                <path d="M3 10.4167C3 7.21907 3 5.62028 3.37752 5.08241C3.75503 4.54454 5.25832 4.02996 8.26491 3.00079L8.83772 2.80472C10.405 2.26824 11.1886 2 12 2C12.8114 2 13.595 2.26824 15.1623 2.80472L15.7351 3.00079C18.7417 4.02996 20.245 4.54454 20.6225 5.08241C21 5.62028 21 7.21907 21 10.4167C21 10.8996 21 11.4234 21 11.9914C21 17.6294 16.761 20.3655 14.1014 21.5273C13.3812 21.8419 13.0211 22 12 22C10.9789 22 10.6188 21.8419 9.89859 21.5273C7.23896 20.3655 3 17.6294 3 11.9914C3 11.4234 3 10.8996 3 10.4167Z" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <div style={{display:"flex",flexDirection:"column"}}>
+                <span style={{fontSize:15,fontWeight:600,color:"var(--primary-text)"}}>{csvSync.sales_gated_title||"Contact sales to enable"}</span>
+                <span style={{fontSize:12,color:"var(--secondary-text)"}}>{csvSync.sales_gated_subtitle||"Data agreement required before upload."}</span>
+              </div>
+            </div>
+            {/* In production, opens Calendly for a real meeting booking.
+                In this prototype, we skip straight to approved so the upload flow can be demoed. */}
+            <button className="btn-primary" style={{flex:"initial",width:"100%",marginTop:2}} onClick={()=>setSalesApproved(true)}>{csvSync.sales_cta_label||"Talk to us"}</button>
+          </>
+        )}
+        {phase==="disconnected"&&(
+          <>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {/* Solar "Link Broken" — mirrors iOS Image("unlink") */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,color:"var(--secondary-text)"}}>
+                <path d="M9.5 14.5L14.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M14.5 4.5L15.646 3.354C17.209 1.791 19.741 1.791 21.303 3.354C22.866 4.916 22.866 7.448 21.303 9.011L20.157 10.157" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M9.5 19.5L8.354 20.646C6.791 22.209 4.259 22.209 2.697 20.646C1.134 19.084 1.134 16.552 2.697 14.989L3.843 13.843" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <div style={{display:"flex",flexDirection:"column"}}>
+                <span style={{fontSize:15,fontWeight:600,color:"var(--primary-text)"}}>Ready to upload</span>
+                <span style={{fontSize:12,color:"var(--secondary-text)"}}>Skip manual entry for large catalogs.</span>
+              </div>
+            </div>
+            <button className="btn-primary" style={{flex:"initial",width:"100%",marginTop:2}} onClick={startUpload}>{csvSync.cta_label}</button>
+          </>
+        )}
+        {phase==="parsing"&&(
+          <>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {/* Solar "Restart" — mirrors iOS Image("restore"), spun for loading */}
+              <svg className="spin-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,color:"var(--accent)"}}>
+                <path d="M21.168 8A10.003 10.003 0 0 0 12 2C6.815 2 2.55 5.947 2.05 11M2.832 16A10.003 10.003 0 0 0 12 22c5.185 0 9.45-3.947 9.95-9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M17 8h4.4a.6.6 0 0 0 .6-.6V3M7 16H2.6a.6.6 0 0 0-.6.6V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <div style={{display:"flex",flexDirection:"column"}}>
+                <span style={{fontSize:15,fontWeight:600,color:"var(--primary-text)"}}>Parsing with AI…</span>
+                <span style={{fontSize:12,color:"var(--secondary-text)"}}>Auto-mapping columns from your export</span>
+              </div>
+            </div>
+            {csvSync.mock_columns_mapped&&(
+              <div style={{display:"flex",flexDirection:"column",gap:2,padding:"4px 0",fontSize:12,color:"var(--secondary-text)",fontFamily:"ui-monospace,monospace"}}>
+                {csvSync.mock_columns_mapped.map(m=>(<div key={m}>{m}</div>))}
+              </div>
+            )}
+            <button className="btn-primary" style={{flex:"initial",width:"100%",marginTop:2}} disabled>Uploading…</button>
+          </>
+        )}
+        {phase==="connected"&&(
+          <>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {/* Solar "Check Circle" — mirrors iOS Image("checkmark") */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,color:"var(--green)"}}>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M8 12.5L10.5 15L16 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <div style={{display:"flex",flexDirection:"column"}}>
+                <span style={{fontSize:15,fontWeight:600,color:"var(--green)"}}>Connected</span>
+                <span style={{fontSize:12,color:"var(--secondary-text)"}}>Last uploaded: Just now · {syncStatus.count.toLocaleString()} products synced</span>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button className="btn-tertiary" onClick={startUpload}>Re-upload</button>
+              <button className="btn-tertiary" onClick={disconnect}>Disconnect</button>
+            </div>
+          </>
+        )}
+      </div>
+      {showInfo&&(
+        <InfoSheet
+          title={title}
+          description={csvSync.description}
+          onClose={()=>setShowInfo(false)}
+        />
+      )}
     </>
   );
 }
@@ -787,15 +1085,43 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
   const [showDelete,setShowDelete]=useState(false);
   const [showDurationPicker,setShowDurationPicker]=useState(false);
   const [showSchedulingInfo,setShowSchedulingInfo]=useState(false);
+  const [showIntakeInfo,setShowIntakeInfo]=useState(false);
+  const [editingIntakeIdx,setEditingIntakeIdx]=useState(null);
+  const [activeSpecialty,setActiveSpecialty]=useState(null);
+  const [activeSelectKey,setActiveSelectKey]=useState(null);
+
+  // Sample item = default seed that hasn't had its name replaced yet.
+  // Nudge also shows when adding a brand-new item with an empty name.
+  const isSample=!!initialItem?._sample && (draft.name||"")===(initialItem?.name||"");
+  const hints=industry.specialty_hints;
+  const isNameEmpty=!(draft.name||"").trim();
+  const showNudges=!!hints && (isSample || (isNew && isNameEmpty));
+  const specialties=hints?Object.keys(hints).filter(k=>!k.startsWith("_")):[];
+  const fillName=(name)=>{
+    setDraft(prev=>({...prev,name,_sample:false}));
+    setActiveSpecialty(null);
+  };
+
+  const visibleSubfields=useMemo(()=>subfields.filter(spec=>{
+    if(!spec.showIf)return true;
+    return draft[spec.showIf.key]===spec.showIf.value;
+  }),[subfields,draft]);
 
   const hasChanges=useMemo(()=>{
     const base=initialItem??emptyItem(industry);
-    const subfieldChanged=subfields.some(s=>(draft[s.key]||"")!==(base[s.key]||""));
+    const subfieldChanged=subfields.some(s=>{
+      if(s.type==="toggle")return !!draft[s.key]!==!!base[s.key];
+      return (draft[s.key]||"")!==(base[s.key]||"");
+    });
     const schedulingChanged=schedulingConfig&&(
       (draft.allow_ai_booking!==base.allow_ai_booking)||
       (draft.event_duration!==base.event_duration)
     );
-    return subfieldChanged||schedulingChanged;
+    const triageChanged=industry.booking_mode==="triage_gated"&&(
+      (!!draft.referral_required!==!!base.referral_required)||
+      (JSON.stringify(draft.ai_intake_checklist||[])!==JSON.stringify(base.ai_intake_checklist||[]))
+    );
+    return subfieldChanged||schedulingChanged||triageChanged;
   },[draft,initialItem,industry]);
 
   const tryDismiss=()=>{
@@ -803,8 +1129,33 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
     else onCancel();
   };
 
-  const updateField=(k,v)=>setDraft(prev=>({...prev,[k]:v}));
+  const updateField=(k,v)=>setDraft(prev=>({...prev,[k]:v,...(k==="name"?{_sample:false}:{})}));
   const title=isNew?`Add ${itemLabel.toLowerCase()}`:`Edit ${itemLabel.toLowerCase()}`;
+
+  if(editingIntakeIdx!==null){
+    const currentList=Array.isArray(draft.ai_intake_checklist)?draft.ai_intake_checklist:[];
+    return(
+      <BusinessFieldEditView
+        label="Intake item"
+        initialValue={currentList[editingIntakeIdx]||""}
+        onSave={(value)=>{
+          const trimmed=(value||"").trim();
+          const nextList=trimmed
+            ?currentList.map((x,i)=>i===editingIntakeIdx?trimmed:x)
+            :currentList.filter((_,i)=>i!==editingIntakeIdx);
+          updateField("ai_intake_checklist",nextList);
+          setEditingIntakeIdx(null);
+        }}
+        onCancel={()=>{
+          // If cancelling a freshly-added empty row, remove it so the list isn't left with blanks.
+          if(!(currentList[editingIntakeIdx]||"").trim()){
+            updateField("ai_intake_checklist",currentList.filter((_,i)=>i!==editingIntakeIdx));
+          }
+          setEditingIntakeIdx(null);
+        }}
+      />
+    );
+  }
 
   return(
     <div className="phone">
@@ -815,63 +1166,158 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
       </div>
       <div className="screen-content">
         {isDraft&&(
-          <div style={{padding:"4px 16px 0"}}>
+          <div style={{padding:"4px 16px 0",display:"flex",alignItems:"center",gap:6}}>
             <span className="tag-draft">Draft</span>
+            {isSample&&<span className="tag-sample">Sample</span>}
           </div>
         )}
         <div style={{height:8}}/>
+        {showNudges&&(
+          <>
+            <div className="nudge-banner">
+              <span className="nudge-icon">✎</span>
+              <div className="nudge-text">
+                <strong>Make this yours.</strong> Rename to what you actually do —
+                pick your focus below for quick suggestions, or type a procedure name.
+              </div>
+            </div>
+            <div className="specialty-chips">
+              {specialties.map(s=>(
+                <button
+                  key={s}
+                  className={`spec-chip ${activeSpecialty===s?"active":""}`}
+                  onClick={()=>setActiveSpecialty(activeSpecialty===s?null:s)}
+                >{s}</button>
+              ))}
+            </div>
+            {activeSpecialty&&(
+              <div className="proc-chips">
+                {hints[activeSpecialty].map(p=>(
+                  <button key={p} className="proc-chip" onClick={()=>fillName(p)}>{p}</button>
+                ))}
+              </div>
+            )}
+            <div style={{height:12}}/>
+          </>
+        )}
         <div className="card">
-          {subfields.map((spec,i)=>{
+          {visibleSubfields.map((spec,i)=>{
             const val=draft[spec.key]||"";
+            const placeholder=(spec.key==="name"&&isSample&&hints?._placeholder)||spec.placeholder||"";
+            const isSelect=spec.type==="select";
+            const isToggle=spec.type==="toggle";
             return(
               <React.Fragment key={spec.key}>
-                <div className="row">
-                  <div className="row-label">{spec.label}</div>
+                <div
+                  className="row"
+                  onClick={isSelect?()=>setActiveSelectKey(spec.key):undefined}
+                  style={{
+                    ...(isSelect?{cursor:"pointer"}:{}),
+                    ...(isToggle?{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}:{}),
+                  }}
+                >
+                  <div className="row-label" style={isToggle?{marginBottom:0,flex:1}:undefined}>{spec.label}</div>
                   {spec.type==="multiline"?(
                     <AutoGrowTextarea
                       className="inline-input"
                       value={val}
-                      placeholder={spec.placeholder||""}
+                      placeholder={placeholder}
                       onChange={e=>updateField(spec.key,e.target.value)}
                     />
+                  ):isSelect?(
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6,minHeight:22,padding:"4px 0 0"}}>
+                      <span style={{fontSize:17,color:val?"var(--primary-text)":"var(--tertiary-text)"}}>{val||"Select"}</span>
+                      <span className="chevron">›</span>
+                    </div>
+                  ):isToggle?(
+                    <Toggle on={!!val} onChange={v=>updateField(spec.key,v)}/>
                   ):(
                     <input
                       className="inline-input"
                       type={spec.type==="url"?"url":"text"}
                       value={val}
-                      placeholder={spec.placeholder||""}
+                      placeholder={placeholder}
                       onChange={e=>updateField(spec.key,e.target.value)}
                     />
                   )}
                 </div>
-                {i<subfields.length-1&&<div className="row-divider"/>}
+                {i<visibleSubfields.length-1&&<div className="row-divider"/>}
               </React.Fragment>
             );
           })}
         </div>
 
-        {schedulingConfig&&(
-          <>
-            <div className="section-header">
-              AI Scheduling
-              <button className="section-info" aria-label="About AI Scheduling" onClick={()=>setShowSchedulingInfo(true)}>ⓘ</button>
-            </div>
-            <div className="card">
-              <div className="settings-row">
-                <div className="settings-row-label">Allow AI to book {schedulingConfig.event_type_plural}</div>
-                <Toggle on={!!draft.allow_ai_booking} onChange={v=>updateField("allow_ai_booking",v)}/>
+        {schedulingConfig&&(()=>{
+          const isTriageGated=industry.booking_mode==="triage_gated";
+          const bookingToggleLabel=isTriageGated
+            ?`Allow AI to book ${schedulingConfig.event_type_plural} after clinician approval`
+            :`Allow AI to book ${schedulingConfig.event_type_plural}`;
+          return(
+            <>
+              <div className="section-header">
+                AI Scheduling
+                <button className="section-info" aria-label="About AI Scheduling" onClick={()=>setShowSchedulingInfo(true)}>ⓘ</button>
               </div>
-              <div className="row-divider"/>
-              <div className="settings-row" onClick={()=>setShowDurationPicker(true)} style={{cursor:"pointer"}}>
-                <div className="settings-row-label">{schedulingConfig.event_type_label} duration</div>
-                <div className="settings-row-trailing">
-                  <span>{draft.event_duration||schedulingConfig.duration_default} {schedulingConfig.duration_unit}</span>
-                  <span className="chevron">›</span>
+              <div className="card">
+                <div className="settings-row">
+                  <div className="settings-row-label">{bookingToggleLabel}</div>
+                  <Toggle on={!!draft.allow_ai_booking} onChange={v=>updateField("allow_ai_booking",v)}/>
                 </div>
+                <div className="row-divider"/>
+                <div className="settings-row" onClick={()=>setShowDurationPicker(true)} style={{cursor:"pointer"}}>
+                  <div className="settings-row-label">{schedulingConfig.event_type_label} duration</div>
+                  <div className="settings-row-trailing">
+                    <span>{draft.event_duration||schedulingConfig.duration_default} {schedulingConfig.duration_unit}</span>
+                    <span className="chevron">›</span>
+                  </div>
+                </div>
+                {isTriageGated&&(
+                  <>
+                    <div className="row-divider"/>
+                    <div className="settings-row">
+                      <div className="settings-row-label">Referral required to book</div>
+                      <Toggle on={!!draft.referral_required} onChange={v=>updateField("referral_required",v)}/>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-          </>
-        )}
+              {isTriageGated&&(()=>{
+                const checklist=Array.isArray(draft.ai_intake_checklist)?draft.ai_intake_checklist:[];
+                const addItem=()=>{
+                  updateField("ai_intake_checklist",[...checklist,""]);
+                  setEditingIntakeIdx(checklist.length);
+                };
+                return(
+                  <>
+                    <div className="section-header">
+                      AI Intake Checklist
+                      <button className="section-info" aria-label="About AI Intake Checklist" onClick={()=>setShowIntakeInfo(true)}>ⓘ</button>
+                    </div>
+                    <div className="card">
+                      {checklist.map((item,idx)=>{
+                        const trimmed=(item||"").trim();
+                        return(
+                          <React.Fragment key={idx}>
+                            <div className="settings-row" onClick={()=>setEditingIntakeIdx(idx)} style={{cursor:"pointer"}}>
+                              <div className="settings-row-label" style={{color:trimmed?"var(--primary-text)":"var(--tertiary-text)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{trimmed||"Untitled item"}</div>
+                              <div className="settings-row-trailing">
+                                <span className="chevron">›</span>
+                              </div>
+                            </div>
+                            <div className="row-divider-inset"/>
+                          </React.Fragment>
+                        );
+                      })}
+                      <button className="add-btn" onClick={addItem}>
+                        <span className="plus-icon">＋</span> Add item
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
+            </>
+          );
+        })()}
       </div>
       <div className="detail-bottom">
         {isNew?(
@@ -913,17 +1359,45 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
           onCancel={()=>setShowDurationPicker(false)}
         />
       )}
+      {activeSelectKey&&(()=>{
+        const spec=subfields.find(s=>s.key===activeSelectKey);
+        if(!spec)return null;
+        return(
+          <OptionPickerSheet
+            title={spec.label}
+            options={spec.options||[]}
+            value={draft[activeSelectKey]||""}
+            allowCustom={!!spec.allowCustom}
+            customUnit={spec.customUnit||""}
+            customPlaceholder={spec.customPlaceholder||"e.g. 12"}
+            onPick={opt=>{updateField(activeSelectKey,opt);setActiveSelectKey(null)}}
+            onCancel={()=>setActiveSelectKey(null)}
+          />
+        );
+      })()}
       {showSchedulingInfo&&schedulingConfig&&(()=>{
         const locLabel=subfields.find(s=>s.key===schedulingConfig.location_source_subfield)?.label||"Location";
         const availLabel=subfields.find(s=>s.key===schedulingConfig.availability_source_subfield)?.label||"Availability";
+        const isTriageGated=industry.booking_mode==="triage_gated";
+        const baseDesc=`Availability uses the ${availLabel} above. Location uses the ${locLabel} above.`;
+        const triageNote=isTriageGated
+          ?" Clinical triage is handled by a clinician, not the AI. The AI collects the intake checklist below, then books only after a clinician has set priority."
+          :"";
         return(
           <InfoSheet
             title="AI Scheduling"
-            description={`Availability uses the ${availLabel} above. Location uses the ${locLabel} above.`}
+            description={baseDesc+triageNote}
             onClose={()=>setShowSchedulingInfo(false)}
           />
         );
       })()}
+      {showIntakeInfo&&(
+        <InfoSheet
+          title="AI Intake Checklist"
+          description="Items the AI asks about on inbound calls or referral intakes for this procedure. Answers attach to a clinician-review queue. The AI never assigns urgency — clinician sets priority before booking."
+          onClose={()=>setShowIntakeInfo(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1023,7 +1497,19 @@ function IndustryPickerSheet({currentId,tree,industriesMap,onPick,onCancel}){
 }
 
 // ── Reusable bottom-sheet option picker (used by ChevPill) ──
-function OptionPickerSheet({title,options,value,onPick,onCancel}){
+// When allowCustom:true, shows a custom numeric input below presets (like DurationPickerSheet).
+// Submitted custom value is formatted as `{n} {customUnit}` (or plain number if no unit).
+function OptionPickerSheet({title,options,value,onPick,onCancel,allowCustom=false,customUnit="",customPlaceholder="e.g. 12"}){
+  const isPreset=options.includes(value);
+  // Prefill custom input with the leading digits of a non-preset value (e.g., "12 months" → "12").
+  const extractedNumber=value?(String(value).match(/^\d+/)?.[0]||""):"";
+  const [custom,setCustom]=useState(isPreset||!value?"":extractedNumber);
+  const submitCustom=()=>{
+    const n=parseInt(custom,10);
+    if(Number.isNaN(n)||n<=0)return;
+    const label=customUnit?`${n} ${customUnit}`:String(n);
+    onPick(label);
+  };
   return(
     <div className="sheet-overlay" onClick={onCancel}>
       <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -1041,6 +1527,23 @@ function OptionPickerSheet({title,options,value,onPick,onCancel}){
             </div>
           ))}
         </div>
+        {allowCustom&&(
+          <div style={{padding:"0 var(--sm)"}}>
+            <div style={{padding:"12px 0 6px",fontSize:12,color:"var(--secondary-text)"}}>Custom {customUnit?`(${customUnit})`:""}</div>
+            <div style={{display:"flex",gap:8}}>
+              <input
+                className="picker-custom-input"
+                type="number"
+                min="1"
+                placeholder={customPlaceholder}
+                value={custom}
+                onChange={e=>setCustom(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter")submitCustom()}}
+              />
+              <button className="btn-primary" style={{flex:"initial",width:84}} onClick={submitCustom} disabled={!custom}>Set</button>
+            </div>
+          </div>
+        )}
         <div className="sheet-buttons">
           <button className="btn-tertiary" onClick={onCancel}>Cancel</button>
         </div>
@@ -1476,6 +1979,7 @@ function CompanyInfoScreen({industry,onChangeIndustry}){
       <NavHeader title="Company info"/>
       <div className="screen-content">
         <GeneralCard
+          industry={industry}
           industryName={industry.label}
           onChangeIndustry={onChangeIndustry?()=>setShowIndustryPicker(true):undefined}
         />
@@ -1493,6 +1997,7 @@ function CompanyInfoScreen({industry,onChangeIndustry}){
           onOpenItem={i=>setDetailMode({type:"edit",index:i})}
           onAddItem={()=>setDetailMode({type:"new"})}
         />
+        <CatalogSyncSection industry={industry}/>
         <InfoCard/>
       </div>
       {showBusinessInfo&&(
@@ -1532,7 +2037,7 @@ const PAGES={
 
 function App(){
   const[page,setPage]=useState("companyInfo");
-  const[industryId,setIndustryId]=useState("residential");
+  const[industryId,setIndustryId]=useState("surgery");
   // Per-industry scenarios state: defaults come from the industry config, user edits persist per-industry.
   const[scenariosByIndustry,setScenariosByIndustry]=useState({});
   const industry=INDUSTRIES[industryId];
