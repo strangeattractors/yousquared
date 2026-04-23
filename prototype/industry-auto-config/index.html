@@ -279,6 +279,7 @@ const INDUSTRIES={
       {key:"list_price",label:"List Price",type:"text"},
       {key:"showing_calendar",label:"Showing Calendar",type:"text"},
       {key:"showing_notes",label:"Showing Notes",type:"multiline"},
+      {key:"notes",label:"Notes",type:"multiline"},
     ],
     default_items:[
       {address:"123 Maple Street, Austin, TX 78701",property_link:"https://www.realtor.com/realestateandhomes-detail/123-maple-st",property_type:"Single-family home",bedrooms:"4",bathrooms:"3",square_footage:"2,400 sqft",lot_size:"0.25 acres",year_built:"1998",list_price:"$625,000",showing_calendar:"Mon–Sat 10am–5pm",showing_notes:"Ring doorbell, shoes off, dog in backyard",allow_ai_booking:true,event_duration:30},
@@ -322,6 +323,7 @@ const INDUSTRIES={
       {key:"provider",label:"Provider",type:"text"},
       {key:"clinic_location",label:"Clinic Location",type:"text"},
       {key:"provider_hours",label:"Provider Hours",type:"text"},
+      {key:"notes",label:"Notes",type:"multiline"},
     ],
     default_items:[
       {name:"Teeth cleaning",description:"Routine cleaning and exam",price:"$120",provider:"Dr. Martinez",clinic_location:"Downtown Clinic, 200 Main St",provider_hours:"Mon–Fri 9am–5pm",allow_ai_booking:true,event_duration:30},
@@ -371,21 +373,24 @@ const INDUSTRIES={
       {key:"description",label:"Description",type:"multiline"},
       {key:"daily_rate",label:"Daily Rate",type:"text"},
       {key:"weekly_rate",label:"Weekly Rate",type:"text"},
+      {key:"weekly_rate_days",label:"Days per Weekly Rate",type:"text",placeholder:"e.g. 5"},
+      {key:"monthly_rate",label:"Monthly Rate",type:"text"},
+      {key:"monthly_rate_days",label:"Days per Monthly Rate",type:"text",placeholder:"e.g. 28"},
       {key:"pickup_location",label:"Pickup Location",type:"text"},
-      {key:"availability_window",label:"Availability Window",type:"text"},
+      {key:"notes",label:"Notes",type:"multiline"},
     ],
     default_items:[
-      {name:"Mini excavator",description:"Compact excavator for small jobs",daily_rate:"$250",weekly_rate:"$1,200",pickup_location:"Yard A, 500 Industrial Blvd",availability_window:"Mon–Sat 7am–6pm",allow_ai_booking:true,event_duration:1},
-      {name:"19ft scissor lift",description:"Electric scissor lift, indoor/outdoor",daily_rate:"$180",weekly_rate:"$900",pickup_location:"Yard A, 500 Industrial Blvd",availability_window:"Mon–Sat 7am–6pm",allow_ai_booking:true,event_duration:1},
+      {name:"Mini excavator",description:"Compact excavator for small jobs",daily_rate:"$250",weekly_rate:"$750",weekly_rate_days:"5",monthly_rate:"$2,400",monthly_rate_days:"28",pickup_location:"Yard A, 500 Industrial Blvd"},
+      {name:"19ft scissor lift",description:"Electric scissor lift, indoor/outdoor",daily_rate:"$180",weekly_rate:"$540",weekly_rate_days:"5",monthly_rate:"$1,800",monthly_rate_days:"28",pickup_location:"Yard A, 500 Industrial Blvd"},
     ],
     itemTitle:it=>(it.name||"").trim()||"Untitled item",
     itemSummary:it=>{
       const name=(it.name||"").trim();
       if(!name)return"Tap to add details";
-      return[it.daily_rate&&`${it.daily_rate}/day`,it.weekly_rate&&`${it.weekly_rate}/wk`].filter(Boolean).join(" · ");
+      return[it.daily_rate&&`${it.daily_rate}/day`,it.weekly_rate&&(it.weekly_rate_days?`${it.weekly_rate}/wk (${it.weekly_rate_days}d)`:`${it.weekly_rate}/wk`),it.monthly_rate&&(it.monthly_rate_days?`${it.monthly_rate}/mo (${it.monthly_rate_days}d)`:`${it.monthly_rate}/mo`)].filter(Boolean).join(" · ");
     },
     business_labels:{
-      pricing:"Pricing",
+      billing_policy:"Billing Policy",
       geography_served:"Delivery Areas",
       hours_of_operation:"Yard Hours",
     },
@@ -393,17 +398,8 @@ const INDUSTRIES={
       geography_served:"Austin Metro — delivery within 30 miles",
       hours_of_operation:"Mon–Sat 7am–6pm",
     },
-    business_draft_keys:["pricing"],
-    scheduling:{
-      event_type_label:"Rental",
-      event_type_plural:"rentals",
-      duration_unit:"day",
-      duration_presets:[1,2,3,5,7,14],
-      duration_default:1,
-      allow_ai_booking_default:true,
-      location_source_subfield:"pickup_location",
-      availability_source_subfield:"availability_window",
-    },
+    business_draft_keys:["billing_policy"],
+    scheduling:null, // Equipment rental doesn't expose per-item AI scheduling controls — duration is customer-driven, bookability is uniform across items.
     auto_config_scenarios:[
       {id:"es1",direction:"outbound",condition:"If client's purchase is in 2 days",instructions:"Text 2 days before rental ends to confirm extension or schedule pickup.",auto:false,rel:"client",event:"purchase",timing:"in 2 days",action:"text"},
       {id:"es2",direction:"outbound",condition:"If client's delivery completed next day",instructions:"Text next day to check setup went smoothly and operator has what they need.",auto:true,rel:"client",event:"delivery",timing:"next day",action:"text"},
@@ -423,6 +419,7 @@ const INDUSTRIES={
       {key:"inventory",label:"Inventory",type:"text",placeholder:"e.g. 120 ct"},
       {key:"purchase_type",label:"Purchase Type",type:"select",options:["one-time","subscription"]},
       {key:"subscription_duration",label:"Subscription Duration",type:"select",options:["1 month","2 months","3 months","4 months","5 months","6 months"],allowCustom:true,customUnit:"months",customPlaceholder:"e.g. 12",showIf:{key:"purchase_type",value:"subscription"}},
+      {key:"notes",label:"Notes",type:"multiline"},
     ],
     default_items:[
       {name:"Generic acetaminophen",description:"Pain reliever (500mg)",dosage:"500mg tablet",inventory:"",purchase_type:"one-time",subscription_duration:""},
@@ -482,6 +479,7 @@ const INDUSTRIES={
       {key:"price",label:"Price (self-pay)",type:"text"},
       {key:"suite",label:"Endoscopy Suite",type:"text"},
       {key:"provider_hours",label:"Provider Hours",type:"text"},
+      {key:"notes",label:"Notes",type:"multiline"},
     ],
     default_items:[
       {_sample:true,name:"Short outpatient procedure",description:"Brief diagnostic scope with sedation",cpt:"—",duration_min:"30",sedation:"Moderate",prep_required:"Clear liquids 24h before; NPO after midnight",escort_required:"Yes",price:"—",suite:"GI Lab Room 1",provider_hours:"Mon–Fri 7am–3pm",referral_required:true,ai_intake_checklist:["Referral document number","Symptoms + duration","Prior GI history","Anticoagulant / blood thinner status","Fasting tolerance","Insurance + transport escort","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:30},
@@ -551,6 +549,7 @@ const INDUSTRIES={
       {key:"followup_interval",label:"Post-op Follow-up Interval",type:"text"},
       {key:"or_room",label:"OR Room",type:"text"},
       {key:"surgeon_hours",label:"Surgeon Hours",type:"text"},
+      {key:"notes",label:"Notes",type:"multiline"},
     ],
     default_items:[
       {_sample:true,name:"Consultation",description:"New patient consultation + workup review",cpt:"—",duration_hr:"0.5",anesthesia:"N/A",length_of_stay:"Clinic visit",preop_requirements:"Bring imaging, labs, referral letter",followup_interval:"Per clinical plan",or_room:"Clinic",surgeon_hours:"Mon–Thu 8am–4pm",referral_required:true,ai_intake_checklist:["Referral document number","Symptoms + duration","Relevant imaging / labs / records","Prior surgeries","Current meds + anticoagulants","Insurance + transport","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:1},
@@ -650,7 +649,7 @@ const emptyItem=(industry)=>({
   ...Object.fromEntries(industry.subfields.map(f=>[f.key,f.default!==undefined?f.default:(f.type==="toggle"?false:"")])),
   ...(industry.scheduling?{
     allow_ai_booking:industry.scheduling.allow_ai_booking_default,
-    event_duration:industry.scheduling.duration_default,
+    ...(industry.scheduling.duration_default!==undefined?{event_duration:industry.scheduling.duration_default}:{}),
   }:{}),
   ...(industry.booking_mode==="triage_gated"?{
     referral_required:true,
@@ -737,7 +736,7 @@ function GeneralCard({industry,industryName,onChangeIndustry}){
 function BusinessInfoCard({labels,values,draftKeys,onInfoTap,onRowTap}){
   // Iterate in canonical order but only include keys that have a value/label defined
   // (industry may opt out of a field — e.g. Residential Agent has no pricing).
-  const canonicalOrder=["pricing","geography_served","hours_of_operation"];
+  const canonicalOrder=["pricing","billing_policy","geography_served","hours_of_operation"];
   const fields=canonicalOrder.filter(k=>labels[k]!==undefined);
   return(
     <>
@@ -1115,7 +1114,7 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
     });
     const schedulingChanged=schedulingConfig&&(
       (draft.allow_ai_booking!==base.allow_ai_booking)||
-      (draft.event_duration!==base.event_duration)
+      (schedulingConfig.duration_presets&&draft.event_duration!==base.event_duration)
     );
     const triageChanged=industry.booking_mode==="triage_gated"&&(
       (!!draft.referral_required!==!!base.referral_required)||
@@ -1263,14 +1262,18 @@ function ItemDetailView({initialItem,industry,isDraft,onSave,onDelete,onCancel})
                   <div className="settings-row-label">{bookingToggleLabel}</div>
                   <Toggle on={!!draft.allow_ai_booking} onChange={v=>updateField("allow_ai_booking",v)}/>
                 </div>
-                <div className="row-divider"/>
-                <div className="settings-row" onClick={()=>setShowDurationPicker(true)} style={{cursor:"pointer"}}>
-                  <div className="settings-row-label">{schedulingConfig.event_type_label} duration</div>
-                  <div className="settings-row-trailing">
-                    <span>{draft.event_duration||schedulingConfig.duration_default} {schedulingConfig.duration_unit}</span>
-                    <span className="chevron">›</span>
-                  </div>
-                </div>
+                {schedulingConfig.duration_presets&&(
+                  <>
+                    <div className="row-divider"/>
+                    <div className="settings-row" onClick={()=>setShowDurationPicker(true)} style={{cursor:"pointer"}}>
+                      <div className="settings-row-label">{schedulingConfig.event_type_label} duration</div>
+                      <div className="settings-row-trailing">
+                        <span>{draft.event_duration||schedulingConfig.duration_default} {schedulingConfig.duration_unit}</span>
+                        <span className="chevron">›</span>
+                      </div>
+                    </div>
+                  </>
+                )}
                 {isTriageGated&&(
                   <>
                     <div className="row-divider"/>
