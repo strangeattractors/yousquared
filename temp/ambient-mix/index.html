@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ambient mix sign-off — v0.70 across all AI-call videos</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 1280px; margin: 32px auto; padding: 0 24px; background: #f7f4ef; color: #2c2c2c; }
+  h1 { font-size: 22px; margin-bottom: 6px; }
+  .sub { color: #888; font-size: 14px; margin-bottom: 28px; }
+  .pair { background: #fff; border: 1px solid #e0d9cf; border-radius: 12px; padding: 20px 24px; margin-bottom: 18px; }
+  .pair h2 { font-size: 16px; margin-bottom: 4px; }
+  .pair .meta { color: #888; font-size: 12px; margin-bottom: 16px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .col .label { font-weight: 700; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .pill { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 12px; background: #eee; color: #555; letter-spacing: 0.05em; text-transform: uppercase; }
+  .pill.new { background: #2a6b4f; color: #fff; }
+  video { width: 100%; border-radius: 8px; background: #000; }
+  .footnote { margin-top: 24px; font-size: 13px; color: #555; padding: 16px 20px; background: #fff; border: 1px solid #e0d9cf; border-radius: 12px; }
+  .usage { font-size: 11px; color: #aaa; margin-top: 6px; }
+</style>
+</head>
+<body>
+<h1>v0.70 ambient mix &mdash; sign-off page</h1>
+<div class="sub">4 unique AI-call videos, each shown as <strong>before</strong> (clean) vs <strong>after</strong> (with office ambience layered at v0.70 linear gain). Source: <code>livekit-agents</code> office-ambience.ogg &mdash; same clip the live agents play to Hair Shunnarah and Safer Pharmacy callers.</div>
+
+<div class="pair">
+  <h2>1. Medical Oncology call</h2>
+  <div class="meta">134.8s &middot; AI handles patient symptom check-in after treatment</div>
+  <div class="row">
+    <div class="col">
+      <div class="label"><span class="pill">before</span> Original</div>
+      <video src="https://strange-attractor.com/presentations/customer-facing/pitch-decks/all-industries/assets/Medical%20Oncology.mp4" controls preload="metadata"></video>
+      <div class="usage">Used in: all-industries deck, oncology deck (as demo_medical_oncology), IPA deck (as call_oncology)</div>
+    </div>
+    <div class="col">
+      <div class="label"><span class="pill new">after</span> v0.70 ambient</div>
+      <video src="v070_medical_oncology.mp4" controls preload="metadata"></video>
+    </div>
+  </div>
+</div>
+
+<div class="pair">
+  <h2>2. Pharmacy patient call</h2>
+  <div class="meta">75.1s &middot; Patient calls about a refill, AI handles intake</div>
+  <div class="row">
+    <div class="col">
+      <div class="label"><span class="pill">before</span> Original</div>
+      <video src="https://strange-attractor.com/presentations/customer-facing/pitch-decks/all-industries/assets/PHARMACY-PATIENT-CALL.mp4" controls preload="metadata"></video>
+      <div class="usage">Used in: all-industries deck, IPA deck (as call_pharmacy)</div>
+    </div>
+    <div class="col">
+      <div class="label"><span class="pill new">after</span> v0.70 ambient</div>
+      <video src="v070_pharmacy_patient_call.mp4" controls preload="metadata"></video>
+    </div>
+  </div>
+</div>
+
+<div class="pair">
+  <h2>3. Construction equipment rental call</h2>
+  <div class="meta">72.0s &middot; AI books equipment rental</div>
+  <div class="row">
+    <div class="col">
+      <div class="label"><span class="pill">before</span> Original</div>
+      <video src="https://strange-attractor.com/presentations/customer-facing/pitch-decks/all-industries/assets/Order-Construction-Equipment-Rental.mp4" controls preload="metadata"></video>
+      <div class="usage">Used in: all-industries deck</div>
+    </div>
+    <div class="col">
+      <div class="label"><span class="pill new">after</span> v0.70 ambient</div>
+      <video src="v070_construction_equipment.mp4" controls preload="metadata"></video>
+    </div>
+  </div>
+</div>
+
+<div class="pair">
+  <h2>4. Clinical trial referral call</h2>
+  <div class="meta">92.8s &middot; AI pre-screens breast cancer patient for trial eligibility</div>
+  <div class="row">
+    <div class="col">
+      <div class="label"><span class="pill">before</span> Original</div>
+      <video src="https://strange-attractor.com/presentations/customer-facing/pitch-decks/oncology/oncology_prez_assets/demo_clinical_trial.mp4" controls preload="metadata"></video>
+      <div class="usage">Used in: oncology deck</div>
+    </div>
+    <div class="col">
+      <div class="label"><span class="pill new">after</span> v0.70 ambient</div>
+      <video src="v070_clinical_trial.mp4" controls preload="metadata"></video>
+    </div>
+  </div>
+</div>
+
+<div class="footnote">
+  <strong>Sign-off:</strong> reply to Alex with <em>go for all</em> and we'll replace these in all 7 deck locations and on Drive. Or call out specific ones to keep / re-render at a different volume.<br><br>
+  <strong>Skipped (not AI calls):</strong> dr_ali_testimonial.mp4 &mdash; this is a human Mt Sinai testimonial, not an AI-handled call.
+</div>
+</body>
+</html>
