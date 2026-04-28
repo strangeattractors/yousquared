@@ -310,9 +310,9 @@ const INDUSTRIES={
       {id:"rs3",direction:"inbound",condition:"If prospect's call is missed",instructions:"Text back instantly apologizing and asking how you can help.",auto:true,rel:"prospect",event:"missed call",timing:"instantly",action:"text"},
     ],
   },
-  medical:{
-    id:"medical",
-    label:"Medical / Dental",
+  primary_care:{
+    id:"primary_care",
+    label:"Primary Care",
     general:{company:"Lakeside Family Practice",job_title:"Family Physician",goes_by:"Dr. Kim"},
     items_label:"Service",
     items_label_plural:"Services Offered",
@@ -326,8 +326,9 @@ const INDUSTRIES={
       {key:"notes",label:"Notes",type:"multiline"},
     ],
     default_items:[
-      {name:"Teeth cleaning",description:"Routine cleaning and exam",price:"$120",provider:"Dr. Martinez",clinic_location:"Downtown Clinic, 200 Main St",provider_hours:"Mon–Fri 9am–5pm",allow_ai_booking:true,event_duration:30},
-      {name:"Initial consultation",description:"New patient assessment",price:"$80",provider:"Dr. Martinez",clinic_location:"Downtown Clinic, 200 Main St",provider_hours:"Mon–Fri 9am–5pm",allow_ai_booking:true,event_duration:45},
+      {name:"Annual physical",description:"Comprehensive wellness exam",price:"$200–$350 self-pay",provider:"Dr. Kim",clinic_location:"Lakeside Family Practice, 100 Main St",provider_hours:"Mon–Fri 8am–5pm",allow_ai_booking:true,event_duration:30},
+      {name:"Sick visit",description:"Same-day or next-day acute care visit",price:"$125–$175 self-pay",provider:"Dr. Kim",clinic_location:"Lakeside Family Practice, 100 Main St",provider_hours:"Mon–Fri 8am–5pm",allow_ai_booking:true,event_duration:20},
+      {name:"Chronic disease follow-up",description:"Diabetes / hypertension / asthma management",price:"$100–$150 self-pay",provider:"Dr. Kim",clinic_location:"Lakeside Family Practice, 100 Main St",provider_hours:"Mon–Fri 8am–5pm",allow_ai_booking:true,event_duration:20},
     ],
     itemTitle:it=>(it.name||"").trim()||"Untitled service",
     itemSummary:it=>{
@@ -343,23 +344,190 @@ const INDUSTRIES={
     business_defaults:{
       pricing:"Most insurance plans accepted. Self-pay pricing varies by service.",
       geography_served:"Austin Metro",
-      hours_of_operation:"Mon–Fri 9am–5pm",
+      hours_of_operation:"Mon–Fri 8am–5pm",
     },
     business_draft_keys:["pricing","hours_of_operation"],
     scheduling:{
       event_type_label:"Appointment",
       event_type_plural:"appointments",
       duration_unit:"min",
-      duration_presets:[15,30,45,60],
+      duration_presets:[15,20,30,45,60],
       duration_default:30,
       allow_ai_booking_default:true,
       location_source_subfield:"clinic_location",
       availability_source_subfield:"provider_hours",
     },
     auto_config_scenarios:[
-      {id:"ms1",direction:"outbound",condition:"If patient's appointment is in 90 days",instructions:"Text a preventive care check-in to book a routine follow-up visit.",auto:false,rel:"patient",event:"appointment",timing:"in 90 days",action:"text"},
-      {id:"ms2",direction:"outbound",condition:"If patient's appointment just completed in 48h",instructions:"Call 48h post-visit to check on recovery, symptoms, and answer questions.",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"call"},
-      {id:"ms3",direction:"outbound",condition:"If patient's purchase is overdue",instructions:"Call to remind about overdue Rx renewal and offer to schedule a visit.",auto:false,rel:"patient",event:"purchase",timing:"overdue",action:"call"},
+      {id:"pc1",direction:"outbound",condition:"If patient's appointment is in 90 days",instructions:"Text a preventive care check-in to book a routine follow-up visit.",auto:false,rel:"patient",event:"appointment",timing:"in 90 days",action:"text"},
+      {id:"pc2",direction:"outbound",condition:"If patient's appointment just completed in 48h",instructions:"Call 48h post-visit to check on recovery, symptoms, and answer questions.",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"call"},
+      {id:"pc3",direction:"outbound",condition:"If patient's purchase is overdue",instructions:"Call to remind about overdue Rx renewal and offer to schedule a visit.",auto:false,rel:"patient",event:"purchase",timing:"overdue",action:"call"},
+    ],
+  },
+  dental:{
+    id:"dental",
+    label:"Dental",
+    general:{company:"Lakeside Dental",job_title:"Dentist",goes_by:"Dr. Martinez"},
+    items_label:"Service",
+    items_label_plural:"Services Offered",
+    subfields:[
+      {key:"name",label:"Service Name",type:"text"},
+      {key:"description",label:"Description",type:"multiline"},
+      {key:"price",label:"Price",type:"text"},
+      {key:"provider",label:"Provider",type:"text"},
+      {key:"clinic_location",label:"Clinic Location",type:"text"},
+      {key:"provider_hours",label:"Provider Hours",type:"text"},
+      {key:"notes",label:"Notes",type:"multiline"},
+    ],
+    default_items:[
+      {name:"New patient exam + X-rays + cleaning",description:"First-visit comprehensive exam, bitewings, and prophylaxis",price:"$200–$350",provider:"Dr. Martinez",clinic_location:"Lakeside Dental, 200 Main St",provider_hours:"Mon–Thu 8am–5pm, Fri 8am–1pm",allow_ai_booking:true,event_duration:60},
+      {name:"Routine cleaning",description:"Prophylaxis cleaning + exam",price:"$100–$150",provider:"Hygienist",clinic_location:"Lakeside Dental, 200 Main St",provider_hours:"Mon–Thu 8am–5pm, Fri 8am–1pm",allow_ai_booking:true,event_duration:45},
+      {name:"Crown (porcelain)",description:"Single-tooth porcelain crown — 2 visits",price:"$900–$1,400",provider:"Dr. Martinez",clinic_location:"Lakeside Dental, 200 Main St",provider_hours:"Mon–Thu 8am–5pm, Fri 8am–1pm",allow_ai_booking:false,event_duration:90},
+    ],
+    itemTitle:it=>(it.name||"").trim()||"Untitled service",
+    itemSummary:it=>{
+      const name=(it.name||"").trim();
+      if(!name)return"Tap to add details";
+      return[it.provider,it.price].filter(Boolean).join(" · ");
+    },
+    business_labels:{
+      pricing:"Pricing",
+      geography_served:"Service Areas",
+      hours_of_operation:"Office Hours",
+    },
+    business_defaults:{
+      pricing:"Most dental insurance accepted. See Insurance for plan list.",
+      geography_served:"Austin Metro",
+      hours_of_operation:"Mon–Thu 8am–5pm, Fri 8am–1pm",
+    },
+    business_draft_keys:["pricing"],
+    scheduling:{
+      event_type_label:"Appointment",
+      event_type_plural:"appointments",
+      duration_unit:"min",
+      duration_presets:[30,45,60,90,120],
+      duration_default:45,
+      allow_ai_booking_default:true,
+      location_source_subfield:"clinic_location",
+      availability_source_subfield:"provider_hours",
+    },
+    auto_config_scenarios:[
+      {id:"dn1",direction:"outbound",condition:"If patient's appointment is in 6 months",instructions:"Text a 6-month cleaning reminder and offer next available slot.",auto:true,rel:"patient",event:"appointment",timing:"in 6 months",action:"text"},
+      {id:"dn2",direction:"outbound",condition:"If patient's appointment just completed in 48h",instructions:"Text a post-visit check-in (sensitivity, comfort, follow-up needed).",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"text"},
+      {id:"dn3",direction:"outbound",condition:"If patient's purchase is overdue",instructions:"Text to follow up on an unscheduled treatment plan (e.g., crown, root canal recommended but not booked).",auto:false,rel:"patient",event:"purchase",timing:"overdue",action:"text"},
+      {id:"dn4",direction:"inbound",condition:"If patient's call is missed",instructions:"Text back instantly apologizing and asking how you can help. Flag dental emergencies for same-day callback.",auto:true,rel:"patient",event:"missed call",timing:"instantly",action:"text"},
+    ],
+  },
+  mental_health:{
+    id:"mental_health",
+    label:"Mental Health",
+    general:{company:"Lakeside Counseling",job_title:"Licensed Therapist",goes_by:"Dr. Lee"},
+    items_label:"Service",
+    items_label_plural:"Services Offered",
+    subfields:[
+      {key:"name",label:"Service Name",type:"text"},
+      {key:"description",label:"Description",type:"multiline"},
+      {key:"modality",label:"Modality",type:"text",placeholder:"e.g. CBT, EMDR, DBT"},
+      {key:"session_length",label:"Session Length",type:"text"},
+      {key:"fee_self_pay",label:"Self-Pay Fee",type:"text"},
+      {key:"provider",label:"Provider",type:"text"},
+      {key:"clinic_location",label:"Office Location",type:"text"},
+      {key:"provider_hours",label:"Provider Hours",type:"text"},
+      {key:"notes",label:"Notes",type:"multiline"},
+    ],
+    default_items:[
+      {name:"Initial intake evaluation",description:"60-minute new client assessment + treatment plan",modality:"Intake",session_length:"60 min",fee_self_pay:"$200–$250",provider:"Dr. Lee",clinic_location:"Lakeside Counseling, 300 Oak Ave",provider_hours:"Mon–Fri 9am–7pm, select Sat",allow_ai_booking:true,event_duration:60},
+      {name:"Individual therapy session",description:"Weekly or bi-weekly individual therapy",modality:"CBT / DBT / EMDR",session_length:"50 min",fee_self_pay:"$150–$200",provider:"Dr. Lee",clinic_location:"Lakeside Counseling, 300 Oak Ave",provider_hours:"Mon–Fri 9am–7pm, select Sat",allow_ai_booking:true,event_duration:50},
+      {name:"Couples / family session",description:"Couples or family therapy",modality:"Family Systems",session_length:"50 min",fee_self_pay:"$175–$225",provider:"Dr. Lee",clinic_location:"Lakeside Counseling, 300 Oak Ave",provider_hours:"Mon–Fri 9am–7pm, select Sat",allow_ai_booking:false,event_duration:50},
+    ],
+    itemTitle:it=>(it.name||"").trim()||"Untitled service",
+    itemSummary:it=>{
+      const name=(it.name||"").trim();
+      if(!name)return"Tap to add details";
+      return[it.session_length,it.fee_self_pay].filter(Boolean).join(" · ");
+    },
+    business_labels:{
+      pricing:"Pricing",
+      geography_served:"Service Areas",
+      hours_of_operation:"Office Hours",
+    },
+    business_defaults:{
+      pricing:"In-network with most major insurance. Sliding scale for self-pay clients.",
+      geography_served:"Austin Metro · Telehealth statewide",
+      hours_of_operation:"Mon–Fri 9am–7pm, select Sat",
+    },
+    business_draft_keys:["pricing"],
+    scheduling:{
+      event_type_label:"Session",
+      event_type_plural:"sessions",
+      duration_unit:"min",
+      duration_presets:[30,45,50,60,90],
+      duration_default:50,
+      allow_ai_booking_default:true,
+      location_source_subfield:"clinic_location",
+      availability_source_subfield:"provider_hours",
+    },
+    auto_config_scenarios:[
+      {id:"mh1",direction:"outbound",condition:"If client's appointment is in 1 week",instructions:"Text a session reminder 24h before. Confirm telehealth link or in-person.",auto:true,rel:"client",event:"appointment",timing:"in 48h",action:"text"},
+      {id:"mh2",direction:"outbound",condition:"If client's appointment is in 2 weeks",instructions:"Between-session check-in: brief, supportive, no clinical content. Reply triggers therapist callback.",auto:false,rel:"client",event:"appointment",timing:"in 2 weeks",action:"text"},
+      {id:"mh3",direction:"outbound",condition:"If client's appointment is overdue",instructions:"Gentle re-engagement after a missed session. Acknowledge it can be hard to come back. Offer easy rebooking. Do not press.",auto:false,rel:"client",event:"appointment",timing:"overdue",action:"text"},
+      {id:"mh4",direction:"inbound",condition:"If client's call is missed",instructions:"Text back instantly with warmth. If language suggests crisis, route to 988 / 911 and flag for immediate clinician callback.",auto:true,rel:"client",event:"missed call",timing:"instantly",action:"text"},
+    ],
+  },
+  oncology:{
+    id:"oncology",
+    label:"Oncology",
+    general:{company:"Metro Oncology Associates",job_title:"Medical Oncologist",goes_by:"Dr. Ali"},
+    items_label:"Service",
+    items_label_plural:"Services Offered",
+    subfields:[
+      {key:"name",label:"Service Name",type:"text"},
+      {key:"description",label:"Description",type:"multiline"},
+      {key:"category",label:"Category",type:"text",placeholder:"e.g. Medical Onc, Hematology, Infusion"},
+      {key:"duration_min",label:"Duration (min)",type:"text"},
+      {key:"provider",label:"Provider",type:"text"},
+      {key:"location",label:"Location",type:"text"},
+      {key:"provider_hours",label:"Provider Hours",type:"text"},
+      {key:"notes",label:"Notes",type:"multiline"},
+    ],
+    default_items:[
+      {_sample:true,name:"New patient consultation",description:"Initial oncology consult — review records, exam, plan",category:"Medical Oncology",duration_min:"60",provider:"Dr. Ali",location:"Metro Oncology, Suite 300",provider_hours:"Mon–Fri 8am–5pm",referral_required:true,ai_intake_checklist:["Referral document number","Diagnosis + biopsy report","Imaging on disc / portal","Prior treatments + dates","Current meds","Insurance + preauth status","Preferred appointment slot(s) from available calendar"],allow_ai_booking:true,event_duration:60},
+      {_sample:true,name:"Surveillance follow-up",description:"Routine post-treatment surveillance visit",category:"Medical Oncology",duration_min:"30",provider:"Dr. Ali",location:"Metro Oncology, Suite 300",provider_hours:"Mon–Fri 8am–5pm",allow_ai_booking:true,event_duration:30},
+      {_sample:true,name:"Chemotherapy infusion",description:"Per regimen — see treatment plan",category:"Infusion",duration_min:"180",provider:"Infusion nurse",location:"Metro Oncology Infusion Suite",provider_hours:"Mon–Fri 7am–6pm",allow_ai_booking:false,event_duration:180},
+      {_sample:true,name:"Clinical trial enrollment",description:"Screening + consent visit for active trial",category:"Clinical Trial",duration_min:"90",provider:"Dr. Ali + research coordinator",location:"Metro Oncology, Suite 300",provider_hours:"Mon–Fri 8am–5pm",referral_required:true,allow_ai_booking:false,event_duration:90},
+    ],
+    itemTitle:it=>(it.name||"").trim()||"Untitled service",
+    itemSummary:it=>{
+      const name=(it.name||"").trim();
+      if(!name)return"Tap to add details";
+      return[it.category,it.duration_min&&`${it.duration_min}min`].filter(Boolean).join(" · ");
+    },
+    business_labels:{
+      geography_served:"Service Areas",
+      hours_of_operation:"Clinic Hours",
+    },
+    business_defaults:{
+      geography_served:"Greater metro area — referrals from regional hospitals and PCPs",
+      hours_of_operation:"Clinic Mon–Fri 8am–5pm · Infusion Mon–Fri 7am–6pm",
+    },
+    business_draft_keys:[],
+    booking_mode:"triage_gated",
+    scheduling:{
+      event_type_label:"Visit",
+      event_type_plural:"visits",
+      duration_unit:"min",
+      duration_presets:[15,30,45,60,90,180],
+      duration_default:30,
+      allow_ai_booking_default:true,
+      location_source_subfield:"location",
+      availability_source_subfield:"provider_hours",
+    },
+    auto_config_scenarios:[
+      {id:"on0",direction:"outbound",condition:"If referral received",instructions:"Reach the referred patient within 24h. Run the AI intake checklist (referral, diagnosis, imaging, prior treatments, insurance) and offer currently-available consultation slots so the patient can express preferred slot(s). Add intake + preferred slots to the oncologist-review queue. Do NOT confirm any slot — oncologist decides based on acuity + patient preference.",auto:true,rel:"patient",event:"referral",timing:"next day",action:"text"},
+      {id:"on1",direction:"outbound",condition:"If patient's appointment just completed in 48h",instructions:"Post-treatment 48h check-in. Ask about CTCAE-grade side effects: nausea, fatigue, rash, diarrhea frequency, dyspnea, visual changes, liver symptoms. If concerning, page on-call oncologist and offer earlier visit.",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"call"},
+      {id:"on2",direction:"outbound",condition:"If patient's appointment is in 1 week",instructions:"Confirm next infusion / clinic visit. Verify port access plan, labs in window, and transport.",auto:true,rel:"patient",event:"appointment",timing:"in 1 week",action:"text"},
+      {id:"on3",direction:"outbound",condition:"If patient's appointment is overdue",instructions:"Surveillance overdue. Urgent text to rebook; escalate to oncologist if no response in 48h.",auto:true,rel:"patient",event:"appointment",timing:"overdue",action:"call"},
+      {id:"on4",direction:"outbound",condition:"If patient's check-in is in 1 week",instructions:"PRO collection per trial protocol — symptoms, side effects, quality of life. Recorded for the care team. Press 1 to begin.",auto:true,rel:"patient",event:"check-in",timing:"in 1 week",action:"call"},
+      {id:"on5",direction:"inbound",condition:"If patient's call is missed",instructions:"Text back instantly. If language suggests medical emergency (severe pain, fever in immunocompromised patient, neuro symptoms), route to 911 and page on-call oncologist.",auto:true,rel:"patient",event:"missed call",timing:"instantly",action:"text"},
     ],
   },
   equipment_rental:{
@@ -661,7 +829,7 @@ const emptyItem=(industry)=>({
 // Leaves reference INDUSTRIES keys; unresolved ids are filtered out.
 const INDUSTRY_TREE=[
   {id:"real_estate",name:"Real Estate",children:["residential"]},
-  {id:"healthcare",name:"Healthcare",children:["medical","pharmacy","gastroenterology","surgery"]},
+  {id:"healthcare",name:"Healthcare",children:["dental","gastroenterology","mental_health","oncology","primary_care","pharmacy","surgery"]},
   {id:"construction",name:"Construction & Engineering",children:["equipment_rental"]},
 ];
 
@@ -1584,14 +1752,20 @@ function ChevPill({options,value,onChange,sheetTitle}){
 // Industry-aware "parsed" scenario — fakes what the AI would extract from a natural-language description.
 const VOICE_EXAMPLE_BY_INDUSTRY={
   residential:"When a buyer hits their 12-month purchase anniversary, text them a homeiversary equity check-in",
-  medical:"When a patient hasn't visited in 90 days, text a preventive care check-in",
+  primary_care:"When a patient hasn't visited in 90 days, text a preventive care check-in",
+  dental:"When a patient is due for a 6-month cleaning, text them to schedule",
+  mental_health:"When a client misses their session, send a gentle re-engagement text two days later",
+  oncology:"Forty-eight hours after chemo, call the patient to check on side effects",
   equipment_rental:"When a client's rental ends in 2 days, text them to confirm extension or pickup",
   pharmacy:"When a patient is about to run out of meds, text a refill reminder two days before",
 };
 
 const PARSED_SCENARIO_BY_INDUSTRY={
   residential:{rel:"buyer",event:"purchase",timing:"in 12 months",action:"text",auto:false},
-  medical:{rel:"patient",event:"appointment",timing:"in 90 days",action:"text",auto:false},
+  primary_care:{rel:"patient",event:"appointment",timing:"in 90 days",action:"text",auto:false},
+  dental:{rel:"patient",event:"appointment",timing:"in 6 months",action:"text",auto:true},
+  mental_health:{rel:"client",event:"appointment",timing:"in 2 days",action:"text",auto:false},
+  oncology:{rel:"patient",event:"appointment",timing:"in 48h",action:"call",auto:true},
   equipment_rental:{rel:"client",event:"purchase",timing:"in 2 days",action:"text",auto:false},
   pharmacy:{rel:"patient",event:"purchase",timing:"in 2 days",action:"text",auto:true},
 };
@@ -2039,7 +2213,7 @@ const PAGES={
 
 function App(){
   const[page,setPage]=useState("companyInfo");
-  const[industryId,setIndustryId]=useState("surgery");
+  const[industryId,setIndustryId]=useState("primary_care");
   // Per-industry scenarios state: defaults come from the industry config, user edits persist per-industry.
   const[scenariosByIndustry,setScenariosByIndustry]=useState({});
   const industry=INDUSTRIES[industryId];
