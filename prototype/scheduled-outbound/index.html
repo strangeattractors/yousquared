@@ -187,12 +187,25 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .notif-actions{display:flex;gap:8px;margin-top:10px}
 .notif-action-btn{flex:1;padding:8px;border-radius:14px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:inherit}
 
-/* ── Industry picker ── */
-.industry-option{display:flex;align-items:center;padding:14px var(--normal);border-bottom:.5px solid var(--border);cursor:pointer;transition:background .1s}
-.industry-option:hover{background:var(--surface-dark)}
-.industry-option:last-child{border-bottom:none}
-.industry-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:14px}
-.industry-check.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+/* ── Industry picker (matches industry-auto-config IndustryPickerSheet) ── */
+.nav-title{position:absolute;left:50%;transform:translateX(-50%);font-size:17px;font-weight:500;color:var(--primary-text)}
+.done-btn{position:absolute;right:var(--normal);top:10px;background:transparent;border:none;color:var(--accent);font-size:17px;font-weight:600;font-family:inherit;cursor:pointer;padding:4px 8px}
+.picker-back-btn{background:transparent;border:none;color:var(--accent);font-size:22px;cursor:pointer;padding:4px;font-family:inherit;display:flex;align-items:center}
+.list-container{flex:1;overflow-y:auto;background:var(--bg-primary);padding:var(--normal) 0}
+.list-container::-webkit-scrollbar{display:none}
+.list-section{background:var(--bg);margin:0 var(--normal) var(--normal);border-radius:var(--r-lg);overflow:hidden;border:.5px solid var(--border)}
+.list-section-header{padding:var(--normal) var(--normal) var(--r-sm);font-size:13px;color:var(--secondary-text);text-transform:uppercase;letter-spacing:.5px;font-weight:500}
+.list-row{padding:14px var(--normal);display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-height:56px;font-size:17px;color:var(--primary-text);border-bottom:.5px solid var(--border);background:var(--bg)}
+.list-row:last-child{border-bottom:none}
+.list-row:hover{background:var(--surface-dark)}
+.list-row-chevron{color:var(--tertiary-text);font-size:18px}
+.list-custom-input{width:100%;padding:14px var(--normal);border:none;background:transparent;outline:none;font-size:17px;color:var(--primary-text);font-family:inherit}
+.list-custom-input::placeholder{color:var(--tertiary-text)}
+/* Industry row inside Settings (iOS PickerButtonWithId parity) */
+.industry-row{padding:12px var(--normal);display:flex;align-items:center;gap:8px;min-height:48px;cursor:pointer}
+.industry-row-label{font-size:17px;color:var(--primary-text);flex-shrink:0}
+.industry-row-value{font-size:17px;color:var(--accent);flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.industry-row-caret{color:var(--accent);flex-shrink:0;display:inline-flex;margin-left:6px}
 </style>
 </head>
 <body>
@@ -234,40 +247,84 @@ const avatarColor=n=>{let h=0;for(let c of n)h=c.charCodeAt(0)+((h<<5)-h);return
 const initials=(fn,ln)=>`${(fn||'')[0]||''}${(ln||'')[0]||''}`.toUpperCase();
 const tagColor=t=>{let h=0;for(let c of t)h=c.charCodeAt(0)+((h<<5)-h);return avatarColors[Math.abs(h)%avatarColors.length]};
 
-// ── Data ──
+// ── Industry registry ──
+// id, label, auto_config_scenarios mirror the industry-auto-config prototype
+// (see /prototype/industry-auto-config/). Each TODO below is an instance of
+// one of these scenarios for its industry.
 const INDUSTRIES={
-  pharmacy:{label:'Pharmacy',icon:'💊',rels:['Patient','Prospect']},
-  oncology:{label:'Oncology',icon:'🩺',rels:['Patient','Caregiver','Referring Physician']},
-  equipment:{label:'Equipment & Materials',icon:'🏗️',rels:['Client','Prospect']},
-  construction:{label:'Construction',icon:'🔧',rels:['Client','Prospect','Vendor']},
-  legal:{label:'Legal / Insurance',icon:'⚖️',rels:['Client','Prospect']},
-  realEstate:{label:'Real Estate',icon:'🏡',rels:['Buyer','Seller','Prospect']},
-  propertyService:{label:'Property Service',icon:'🏢',rels:['Client','Prospect']},
+  residential:{
+    id:'residential',label:'Residential Agent',
+    auto_config_scenarios:[
+      {id:'rs1',direction:'outbound',condition:"If buyer's purchase date is in 12 months",instructions:'Text a homeiversary check-in offering a fresh comps / equity update.',auto:false,rel:'buyer',event:'purchase',timing:'in 12 months',action:'text'},
+      {id:'rs2',direction:'outbound',condition:"If prospect's listing inquiry is next day",instructions:'Follow up on the listing inquiry with showing availability this week.',auto:true,rel:'prospect',event:'listing inquiry',timing:'next day',action:'text'},
+      {id:'rs3',direction:'inbound',condition:"If prospect's call is missed",instructions:'Text back instantly apologizing and asking how you can help.',auto:true,rel:'prospect',event:'missed call',timing:'instantly',action:'text'},
+    ],
+  },
+  medical:{
+    id:'medical',label:'Medical / Dental',
+    auto_config_scenarios:[
+      {id:'ms1',direction:'outbound',condition:"If patient's appointment is in 90 days",instructions:'Text a preventive care check-in to book a routine follow-up visit.',auto:false,rel:'patient',event:'appointment',timing:'in 90 days',action:'text'},
+      {id:'ms2',direction:'outbound',condition:"If patient's appointment just completed in 48h",instructions:'Call 48h post-visit to check on recovery, symptoms, and answer questions.',auto:true,rel:'patient',event:'appointment',timing:'in 48h',action:'call'},
+      {id:'ms3',direction:'outbound',condition:"If patient's purchase is overdue",instructions:'Call to remind about overdue Rx renewal and offer to schedule a visit.',auto:false,rel:'patient',event:'purchase',timing:'overdue',action:'call'},
+      {id:'ms4',direction:'inbound',condition:"If patient's call is missed",instructions:'Text back instantly apologizing and asking how you can help.',auto:true,rel:'patient',event:'missed call',timing:'instantly',action:'text'},
+    ],
+  },
+  equipment_rental:{
+    id:'equipment_rental',label:'Equipment Rental',
+    auto_config_scenarios:[
+      {id:'es1',direction:'outbound',condition:"If client's purchase is in 2 days",instructions:'Text 2 days before rental ends to confirm extension or schedule pickup.',auto:false,rel:'client',event:'purchase',timing:'in 2 days',action:'text'},
+      {id:'es2',direction:'outbound',condition:"If client's delivery completed next day",instructions:'Text next day to check setup went smoothly and operator has what they need.',auto:true,rel:'client',event:'delivery',timing:'next day',action:'text'},
+      {id:'es3',direction:'outbound',condition:"If prospect's lead is next day",instructions:'Follow up on the quote the next day to confirm or adjust.',auto:false,rel:'prospect',event:'lead',timing:'next day',action:'text'},
+      {id:'es4',direction:'inbound',condition:"If prospect's call is missed",instructions:'Text back instantly apologizing and asking how you can help.',auto:true,rel:'prospect',event:'missed call',timing:'instantly',action:'text'},
+    ],
+  },
+  pharmacy:{
+    id:'pharmacy',label:'Pharmacy',
+    auto_config_scenarios:[
+      {id:'ps1',direction:'outbound',condition:"If patient's purchase is in 2 days",instructions:'Text a refill reminder and confirm delivery address.',auto:true,rel:'patient',event:'purchase',timing:'in 2 days',action:'text'},
+      {id:'ps2',direction:'outbound',condition:"If patient's delivery completed next day",instructions:'Text next day to check delivery arrived safely and answer any questions.',auto:true,rel:'patient',event:'delivery',timing:'next day',action:'text'},
+      {id:'ps3',direction:'outbound',condition:"If prospect's lead is next day",instructions:'Follow up on new inquiry the next day to help them get started.',auto:false,rel:'prospect',event:'lead',timing:'next day',action:'text'},
+      {id:'ps4',direction:'inbound',condition:"If patient's call is missed",instructions:'Text back instantly apologizing and asking how you can help.',auto:true,rel:'patient',event:'missed call',timing:'instantly',action:'text'},
+    ],
+  },
+  gastroenterology:{
+    id:'gastroenterology',label:'Gastroenterology',
+    auto_config_scenarios:[
+      {id:'gi0',direction:'inbound',condition:'If a referral is received or caller requests an endoscopy',instructions:'Run the AI intake checklist and offer currently-available slots so the caller can express preferred slot(s). Add intake + preferred slots to the clinician-review queue. Do NOT confirm any slot — clinician decides based on priority + patient preference.',auto:true,rel:'patient',event:'lead',timing:'instantly',action:'text'},
+      {id:'gi_approval',direction:'outbound',condition:'If clinician approves a slot for a queued patient',instructions:'Outbound text/call the patient with the approved slot. If the clinician’s choice differs from the patient’s preference, briefly explain and offer one alternative. Patient confirms or declines.',auto:true,rel:'patient',event:'booking',timing:'instantly',action:'text'},
+      {id:'gi1',direction:'outbound',condition:'If endoscopy slot opens in next 48h',instructions:'(Cancellation backfill) Text waitlist patients in clinician-assigned priority order. First YES is handed off to staff for confirmation — no AI auto-booking.',auto:true,rel:'patient',event:'open slot',timing:'in 48h',action:'text'},
+      {id:'gi2',direction:'outbound',condition:"If patient's surveillance is overdue",instructions:'Urgent text to rebook; escalate to physician if no response in 48h.',auto:true,rel:'patient',event:'surveillance',timing:'overdue',action:'text'},
+      {id:'gi3',direction:'outbound',condition:"If patient's procedure is in 48h",instructions:'Pre-op confirmation: NPO started, bowel prep, anticoagulant hold, transport confirmed.',auto:true,rel:'patient',event:'procedure',timing:'in 48h',action:'text'},
+      {id:'gi4',direction:'outbound',condition:"If patient's procedure completed next day",instructions:'Post-op check; book pathology follow-up if indicated.',auto:true,rel:'patient',event:'procedure',timing:'next day',action:'text'},
+      {id:'gi5',direction:'outbound',condition:"If patient's screening is due in 6 months",instructions:'Text reminder to schedule screening endoscopy.',auto:false,rel:'patient',event:'screening',timing:'in 6 months',action:'text'},
+    ],
+  },
+  surgery:{
+    id:'surgery',label:'Surgery',
+    auto_config_scenarios:[
+      {id:'sx6',direction:'outbound',condition:'If referral received',instructions:'Text referred patient within 24h. Run the AI intake checklist and offer currently-available slots so the patient can express preferred slot(s). Add intake + preferred slots to the surgeon-review queue. Do NOT confirm any slot — surgeon decides based on priority + patient preference.',auto:true,rel:'patient',event:'referral',timing:'next day',action:'text'},
+      {id:'sx_approval',direction:'outbound',condition:'If surgeon approves a slot for a queued patient',instructions:'Outbound text/call the patient with the approved slot. If the surgeon’s choice differs from the patient’s preference, briefly explain and offer one alternative. Patient confirms or declines.',auto:true,rel:'patient',event:'booking',timing:'instantly',action:'text'},
+      {id:'sx1',direction:'outbound',condition:'If OR slot is cancelled same-week',instructions:'(Cancellation backfill) Reach pre-op-ready waitlist patients in surgeon-assigned priority order. First YES is handed off to staff for confirmation — no AI auto-booking.',auto:true,rel:'patient',event:'open slot',timing:'in 7 days',action:'text'},
+      {id:'sx2',direction:'outbound',condition:"If patient's follow-up is overdue",instructions:'Urgent recall; escalate to surgeon if no response in 48h.',auto:true,rel:'patient',event:'follow-up',timing:'overdue',action:'call'},
+      {id:'sx3',direction:'outbound',condition:"If patient's surgery is in 72h",instructions:'Pre-op confirmation: NPO, meds, clearance labs, arrival time, transport.',auto:true,rel:'patient',event:'surgery',timing:'in 72h',action:'text'},
+      {id:'sx4',direction:'outbound',condition:"If patient's surgery completed next day",instructions:'Post-op day 1: pain, complications, discharge plan.',auto:true,rel:'patient',event:'surgery',timing:'next day',action:'call'},
+      {id:'sx5',direction:'outbound',condition:"If patient's clearance is in 2 weeks",instructions:'Confirm all pre-op requirements (labs, clearance, imaging) are in.',auto:false,rel:'patient',event:'clearance',timing:'in 2 weeks',action:'text'},
+    ],
+  },
 };
 
-const PRESETS={
-  pharmacy:{
-    Patient:[
-      {type:'renewal',label:'Refill Due',rule:'Last fill date + days supply = next refill date',draft:'Hi {first_name}, this is {biz}. Your {medication} refill is coming due around {date}. We can ship to your address — reply YES to confirm.'},
-      {type:'follow-up',label:'Stock Restock',rule:'Inquired medication was out of stock; check restock date',draft:'Hi {first_name}, this is {biz}. Good news — {medication} is back in stock. Would you like us to fill your script? Reply YES or call us.'},
-    ],
-    Prospect:[{type:'follow-up',label:'New Inquiry Follow-up',rule:'Prospect called but could not be served; follow up next day',draft:'Hi {first_name}, this is {biz}. Following up on your inquiry. We\'d love to help — reply or call anytime.'}],
-  },
-  oncology:{
-    Patient:[
-      {type:'check-in',label:'Post-Treatment Check-in',rule:'After chemo/radiation cycle ends, check on side effects & recovery (48-72h post-treatment)',draft:'Hi {first_name}, this is Dr. {user_last_name}\'s office. We\'re reaching out to see how you\'re feeling after your recent treatment. Please call us at {phone} to discuss — we\'re here for you.'},
-      {type:'check-in',label:'Scan Results Check-in',rule:'After imaging/labs are resulted, reach out to schedule review (within 24h of results)',draft:'Hi {first_name}, this is Dr. {user_last_name}\'s office. Your recent results are ready for review. Please call us at {phone} to schedule a time to discuss with the doctor.'},
-      {type:'referral',label:'Specialist Referral',rule:'When treatment plan requires specialist (surgeon, radiation oncologist, immunotherapy provider)',draft:'Hi {first_name}, this is Dr. {user_last_name}\'s office. We\'d like to connect you with a specialist as part of your care plan. Please call us at {phone} to discuss next steps.'},
-      {type:'check-in',label:'PRO Collection (Clinical Trial)',rule:'Per trial protocol schedule (weekly/bi-weekly), automated outbound call to collect patient-reported outcomes — symptoms, side effects, quality of life',draft:'Hi {first_name}, this is an automated check-in from Dr. {user_last_name}\'s office for your clinical trial. We have a few brief questions about how you\'re feeling. This call is recorded for your care team. Press 1 to begin.',sendAs:'call'},
-    ],
-    Caregiver:[{type:'check-in',label:'Caregiver Update',rule:'After key milestones (cycle completion, scan results), update designated caregiver',draft:'Hi {first_name}, this is Dr. {user_last_name}\'s office regarding {patient_first_name}\'s care. We have an update to share — please call us at {phone} at your convenience.'}],
-  },
-  equipment:{Client:[{type:'renewal',label:'Rental Extension',rule:'Rental start + term = return/extend date',draft:'Hi {first_name}, your {equipment} rental is approaching end of term. Need to extend? Reply EXTEND or we\'ll schedule pickup.'}],Prospect:[{type:'follow-up',label:'Quote Follow-up',rule:'Quote sent, prospect hasn\'t confirmed; follow up next day',draft:'Hi {first_name}, {user_first_name} from {biz}. Following up on your {equipment} quote. Want us to hold it? Reply BOOK or call.'}]},
-  construction:{Client:[{type:'renewal',label:'Warranty Walkthrough',rule:'Project completion + 11 months = warranty walkthrough',draft:'Hi {first_name}, it\'s {biz}. Your 1-year warranty walkthrough is coming due — can we schedule a visit?'}],Prospect:[{type:'follow-up',label:'Bid Follow-up',rule:'Bid submitted, prospect hasn\'t confirmed; follow up next day',draft:'Hi {first_name}, {user_first_name} from {biz}. Checking in on the bid we sent. Any questions?'}]},
-  legal:{Client:[{type:'renewal',label:'Case Status Update',rule:'Case milestone → proactive update',draft:'Hi {first_name}, {user_first_name} from {biz}. We have an update on your case. Available for a call? Reply with a good time.'}],Prospect:[{type:'follow-up',label:'Intake Follow-up',rule:'Initial call + 1 day',draft:'Hi {first_name}, this is {biz}. Thanks for calling. Do you have 10 minutes to review your options?'}]},
-  realEstate:{Buyer:[{type:'follow-up',label:'Showing Follow-up',rule:'Listing inquiry; follow up next day',draft:'Hi {first_name}, it\'s {user_first_name} from {biz}. Following up on your inquiry. I have showing availability this week.'}],Seller:[{type:'renewal',label:'Homeiversary',rule:'Close date + 12 months = equity check-in',draft:'Hi {first_name}, it\'s {user_first_name} from {biz}. Happy homeiversary! Homes in your area selling strong. Reply GO for a free market analysis.'}]},
-  propertyService:{Client:[{type:'renewal',label:'Annual Inspection',rule:'Last service + 12 months',draft:'Hi {first_name}, it\'s {biz}. Your annual inspection is coming due. Reply BOOK or call to confirm.'}],Prospect:[{type:'follow-up',label:'Quote Follow-up',rule:'Quote requested, not confirmed; follow up next day',draft:'Hi {first_name}, {user_first_name} from {biz}. Following up on your quote. Want us to schedule a visit?'}]},
-};
+// Industry tree for the picker (parent/child drill-down, mirrors industry-auto-config prototype).
+const INDUSTRY_TREE=[
+  {id:'real_estate',name:'Real Estate',children:['residential']},
+  {id:'healthcare',name:'Healthcare',children:['medical','pharmacy','gastroenterology','surgery']},
+  {id:'construction',name:'Construction & Engineering',children:['equipment_rental']},
+];
+
+// Option taxonomies for ChevPill dropdowns inside the scenario edit view.
+const SCENARIO_REL_OPTIONS=['patient','caregiver','client','prospect','lead','buyer','seller','tenant','member','subscriber','partner','vendor','contractor','referral'];
+const SCENARIO_EVENT_OPTIONS=['lead','inquiry','quote','purchase','renewal','cancellation','delivery','booking','service','appointment','follow-up','check-in','listing inquiry','missed call'];
+const SCENARIO_TIMING_OPTIONS=['instantly','in 1h','in 3h','in 6h','in 12h','next day','in 48h','in 2 days','in 3 days','in 5 days','in 1 week','in 2 weeks','in 1 month','in 3 months','in 6 months','in 90 days','in 12 months','overdue'];
+const SCENARIO_ACTION_OPTIONS=['text','call'];
 
 const EVENTS=[
   {date:'Mar 28, 2:13p',type:'call-in',text:'Called about refill for Ozempic 1mg. Confirmed Tuesday delivery to Florida address.',source:'Call transcript'},
@@ -280,20 +337,26 @@ const EVENTS=[
 
 const TODOS=[
   // ── Renewals ──
-  {id:1,contact:'Maria A.',rel:'Patient',type:'renewal',summary:'Ozempic refill coming due: confirm delivery to her Florida address and send reminder.',callDraft:'Authenticate (DoB) & remind Maria her Ozempic refill is due around Apr 2. Confirm she wants delivery to her Florida address. Offer to adjust if needed.',textDraft:'Hi Maria, this is Safer Pharmacy. You have a refill coming due around Apr 2. Can you call us back on this number to confirm delivery details please?',due:'Apr 2',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Feb 10',summary:'New patient intake. Transferring prescriptions from CVS — Ozempic 1mg, Metformin 500mg, Lisinopril 10mg.'},{type:'sms',direction:'out',time:'Feb 12',text:'Welcome to Safer Pharmacy! Your prescriptions have been received and are being processed.'},{type:'call',direction:'in',time:'Feb 18',summary:'Asked about Lisinopril side effects — pharmacist explained dizziness may occur in first week.'},{type:'sms',direction:'out',time:'Feb 25',text:'Your prescriptions are ready for delivery. We\'ll ship tomorrow to your Florida address.'},{type:'call',direction:'in',time:'Mar 1',summary:'Asked about switching from Metformin 500mg to extended release. Pharmacist explained the difference and updated her profile.'}],serviceEvent:{title:'Ozempic 1mg delivered on Mar 5, 30-day supply',scheduled:'Scheduled for Apr 2: refill reminder',date:'Mar 5'},recentItems:[{type:'call',direction:'out',time:'Mar 12',summary:'AI check-in: Walked Maria through Ozempic pen injection technique, storage at 36-46°F, and rotating injection sites.'},{type:'call',direction:'out',time:'Mar 22',summary:'AI check-in: Maria reporting mild nausea after first week. Advised taking with food and starting with lower dose.'}]},
-  {id:2,contact:'Sarah K.',rel:'Patient',type:'renewal',summary:'Surveillance scan due: 6 months since last imaging, schedule routine follow-up.',callDraft:'Authenticate (DoB) & call Sarah to schedule her 6-month surveillance scan. Emphasize staying on schedule is important. Offer available slots this week.',textDraft:'Hi Sarah, this is Dr. Ali\'s office. Friendly reminder that it\'s time for your routine follow-up: it\'s been 6 months since we last saw you (Oct 14). Could you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Aug 5',summary:'Initial consultation. Diagnosed stage II, discussed treatment options with Dr. Ali.'},{type:'call',direction:'in',time:'Aug 20',summary:'Pre-treatment bloodwork reviewed. Cleared to begin immunotherapy.'},{type:'call',direction:'in',time:'Sep 3',summary:'Completed immunotherapy cycle 1. Mild fatigue reported, otherwise tolerating well.'},{type:'call',direction:'out',time:'Sep 5',summary:'AI check-in: Asked about appetite and energy levels after cycle 1. Sarah feeling OK.'},{type:'call',direction:'in',time:'Sep 28',summary:'Completed cycle 2. Discussed managing nausea with anti-emetics.'}],serviceEvent:{title:'CT scan on Oct 14 — no evidence of disease',scheduled:'Scheduled for Apr 14: 6-month surveillance scan reminder',date:'Oct 14'},recentItems:[{type:'call',direction:'out',time:'Nov 8',summary:'AI check-in: Asked about managing fatigue between cycles. Advised on sleep hygiene and light exercise.'},{type:'call',direction:'in',time:'Feb 12',summary:'Reported tingling in fingers. Dr. Ali noted as peripheral neuropathy — adjusted supportive meds.'},{type:'call',direction:'in',time:'Mar 20',summary:'Called to reschedule Thursday appointment due to travel. Rescheduled to Apr 10.'}]},
-  {id:3,contact:'Luis M.',rel:'Client',type:'renewal',summary:'Two scissor lifts rental ends in 2 days: confirm extension or schedule pickup.',callDraft:'Check with Luis — his 2 scissor lifts at 600 B St are up Friday. Does he want to extend or should we schedule pickup?',textDraft:'Hi Luis, this is All Access Equipment. Your 2 scissor lifts at 600 B St are up for return on Friday. Need to extend? Reply EXTEND or we\'ll schedule pickup.',due:'Wed',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Feb 15',summary:'Inquired about scissor lift availability for a commercial project at 600 B St.'},{type:'sms',direction:'out',time:'Feb 16',text:'Quote sent: 2x 19ft scissor lifts, $450/week each. Delivery included.'},{type:'call',direction:'in',time:'Feb 20',summary:'Confirmed the quote. Wants delivery March 3rd, morning slot.'},{type:'sms',direction:'out',time:'Mar 2',text:'Delivery confirmed for tomorrow 8am. Operator manual attached.'}],serviceEvent:{title:'2x scissor lifts rental started on Mar 3, 30-day term',scheduled:'Scheduled for Apr 2: renewal reminder',date:'Mar 3'},recentItems:[{type:'call',direction:'in',time:'Mar 15',summary:'Operator asked about load capacity for the 19ft model. Confirmed 500lb platform capacity.'},{type:'call',direction:'in',time:'Mar 28',summary:'Reported a flat tire on one lift. Dispatched technician for same-day repair.'}]},
+  {id:1,industryId:'pharmacy',notifTitle:'Rx refill: Maria A.',contact:'Maria A.',rel:'Patient',type:'renewal',summary:'Ozempic refill coming due: confirm delivery to her Florida address and send reminder.',callDraft:'Authenticate (DoB) & remind Maria her Ozempic refill is due around Apr 2. Confirm she wants delivery to her Florida address. Offer to adjust if needed.',textDraft:'Hi Maria, this is Safer Pharmacy. You have a refill coming due around Apr 2. Can you call us back on this number to confirm delivery details please?',due:'Apr 2',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Feb 10',summary:'New patient intake. Transferring prescriptions from CVS — Ozempic 1mg, Metformin 500mg, Lisinopril 10mg.'},{type:'sms',direction:'out',time:'Feb 12',text:'Welcome to Safer Pharmacy! Your prescriptions have been received and are being processed.'},{type:'call',direction:'in',time:'Feb 18',summary:'Asked about Lisinopril side effects — pharmacist explained dizziness may occur in first week.'},{type:'sms',direction:'out',time:'Feb 25',text:'Your prescriptions are ready for delivery. We\'ll ship tomorrow to your Florida address.'},{type:'call',direction:'in',time:'Mar 1',summary:'Asked about switching from Metformin 500mg to extended release. Pharmacist explained the difference and updated her profile.'}],serviceEvent:{title:'Ozempic 1mg delivered on Mar 5, 30-day supply',scheduled:'Scheduled for Apr 2: refill reminder',date:'Mar 5'},recentItems:[{type:'call',direction:'out',time:'Mar 12',summary:'AI check-in: Walked Maria through Ozempic pen injection technique, storage at 36-46°F, and rotating injection sites.'},{type:'call',direction:'out',time:'Mar 22',summary:'AI check-in: Maria reporting mild nausea after first week. Advised taking with food and starting with lower dose.'}]},
+  {id:2,industryId:'medical',notifTitle:'Surveillance scan: Sarah K.',contact:'Sarah K.',rel:'Patient',type:'renewal',summary:'Surveillance scan due: 6 months since last imaging, schedule routine follow-up.',callDraft:'Authenticate (DoB) & call Sarah to schedule her 6-month surveillance scan. Emphasize staying on schedule is important. Offer available slots this week.',textDraft:'Hi Sarah, this is Dr. Ali\'s office. Friendly reminder that it\'s time for your routine follow-up: it\'s been 6 months since we last saw you (Oct 14). Could you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Aug 5',summary:'Initial consultation. Diagnosed stage II, discussed treatment options with Dr. Ali.'},{type:'call',direction:'in',time:'Aug 20',summary:'Pre-treatment bloodwork reviewed. Cleared to begin immunotherapy.'},{type:'call',direction:'in',time:'Sep 3',summary:'Completed immunotherapy cycle 1. Mild fatigue reported, otherwise tolerating well.'},{type:'call',direction:'out',time:'Sep 5',summary:'AI check-in: Asked about appetite and energy levels after cycle 1. Sarah feeling OK.'},{type:'call',direction:'in',time:'Sep 28',summary:'Completed cycle 2. Discussed managing nausea with anti-emetics.'}],serviceEvent:{title:'CT scan on Oct 14 — no evidence of disease',scheduled:'Scheduled for Apr 14: 6-month surveillance scan reminder',date:'Oct 14'},recentItems:[{type:'call',direction:'out',time:'Nov 8',summary:'AI check-in: Asked about managing fatigue between cycles. Advised on sleep hygiene and light exercise.'},{type:'call',direction:'in',time:'Feb 12',summary:'Reported tingling in fingers. Dr. Ali noted as peripheral neuropathy — adjusted supportive meds.'},{type:'call',direction:'in',time:'Mar 20',summary:'Called to reschedule Thursday appointment due to travel. Rescheduled to Apr 10.'}]},
+  {id:3,industryId:'equipment_rental',notifTitle:'Rental renewal: Luis M.',contact:'Luis M.',rel:'Client',type:'renewal',summary:'Two scissor lifts rental ends in 2 days: confirm extension or schedule pickup.',callDraft:'Check with Luis — his 2 scissor lifts at 600 B St are up Friday. Does he want to extend or should we schedule pickup?',textDraft:'Hi Luis, this is All Access Equipment. Your 2 scissor lifts at 600 B St are up for return on Friday. Need to extend? Reply EXTEND or we\'ll schedule pickup.',due:'Wed',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Feb 15',summary:'Inquired about scissor lift availability for a commercial project at 600 B St.'},{type:'sms',direction:'out',time:'Feb 16',text:'Quote sent: 2x 19ft scissor lifts, $450/week each. Delivery included.'},{type:'call',direction:'in',time:'Feb 20',summary:'Confirmed the quote. Wants delivery March 3rd, morning slot.'},{type:'sms',direction:'out',time:'Mar 2',text:'Delivery confirmed for tomorrow 8am. Operator manual attached.'}],serviceEvent:{title:'2x scissor lifts rental started on Mar 3, 30-day term',scheduled:'Scheduled for Apr 2: renewal reminder',date:'Mar 3'},recentItems:[{type:'call',direction:'in',time:'Mar 15',summary:'Operator asked about load capacity for the 19ft model. Confirmed 500lb platform capacity.'},{type:'call',direction:'in',time:'Mar 28',summary:'Reported a flat tire on one lift. Dispatched technician for same-day repair.'}]},
   // ── Check-ins ──
-  {id:4,contact:'Carlos R.',rel:'Patient',type:'check-in',summary:'Ozempic delivered yesterday: check if delivery arrived safely and answer any questions.',callDraft:'Authenticate (DoB) & check in with Carlos — his Ozempic was delivered yesterday to his Miami address. Ask if it arrived safely and if he has any questions about the medication.',textDraft:'Hi Carlos, this is Safer Pharmacy. Just checking in — did your delivery arrive safely? Any questions? Can you call us back on this number please?',due:'Today',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Mar 20',summary:'New patient intake. Transferring from Walgreens — Ozempic 1mg prescribed by Dr. Lopez.'},{type:'call',direction:'in',time:'Mar 22',summary:'Called to confirm Miami delivery address and insurance info. Blue Cross on file.'},{type:'sms',direction:'out',time:'Mar 28',text:'Your prescription is being processed. Estimated delivery: March 30.'},{type:'call',direction:'in',time:'Mar 29',summary:'Asked about Ozempic storage requirements. Advised refrigeration before first use.'}],serviceEvent:{title:'Ozempic 1mg delivered on Mar 30, first delivery',scheduled:'Scheduled for Mar 31: day-1 delivery check-in',date:'Mar 30'}},
-  {id:5,contact:'James W.',rel:'Patient',type:'check-in',summary:'48h post immunotherapy cycle 3: check in on side effects and recovery.',callDraft:'Authenticate (DoB) & check in on James 48h after immunotherapy cycle 3. Ask about nausea, fatigue, appetite, rash, diarrhea frequency, dyspnea, visual changes, and liver symptoms (CTCAE criteria). If concerning, offer to move up his next visit.',textDraft:'Hi James, this is Dr. Ali\'s office. We hope you\'re recovering well and would like to check in. Can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Jan 15',summary:'Initial consultation with Dr. Ali. Discussed treatment plan for stage II lymphoma.'},{type:'call',direction:'in',time:'Feb 3',summary:'Completed immunotherapy cycle 1. Tolerated well, mild headache.'},{type:'call',direction:'out',time:'Feb 5',summary:'AI check-in: Asked about headache and hydration after cycle 1. James feeling better.'},{type:'call',direction:'in',time:'Mar 1',summary:'Completed cycle 2. Some nausea but manageable with prescribed anti-emetics.'},{type:'call',direction:'in',time:'Mar 25',summary:'Pre-cycle 3 bloodwork reviewed. White cell count adequate, cleared to proceed.'}],serviceEvent:{title:'Immunotherapy cycle 3 completed on Mar 29',scheduled:'Scheduled for Mar 31: 48h post-treatment check-in',date:'Mar 29'}},
-  {id:6,contact:'Dave T.',rel:'Client',type:'check-in',summary:'40-ft boom delivered yesterday: check if setup went smoothly and operator has what they need.',callDraft:'Check in with Dave — the 40-ft boom was delivered yesterday for his Monday job. Make sure it\'s set up OK and the operator has what they need.',textDraft:'Hi Dave, John from All Access. Just checking in — is the boom set up and running OK on-site? Let us know if you need anything.',due:'Today',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Mar 20',summary:'First-time caller. Needs a 40-ft boom for exterior painting job starting Monday.'},{type:'sms',direction:'out',time:'Mar 21',text:'Quote sent: 40-ft boom lift, $650/week. Delivery + harnesses included.'},{type:'call',direction:'in',time:'Mar 25',summary:'Confirmed the rental. Delivery address: 742 Pine St. Needs it there by 7am Monday.'},{type:'call',direction:'in',time:'Mar 28',summary:'Asked about safety harness requirements. Confirmed we include harnesses with all boom rentals.'}],serviceEvent:{title:'40-ft boom delivered on-site on Mar 31',scheduled:'Scheduled for Apr 1: day-1 equipment check-in',date:'Mar 31'}},
+  {id:4,industryId:'pharmacy',notifTitle:'Rx delivery check-in: Carlos R.',contact:'Carlos R.',rel:'Patient',type:'check-in',summary:'Ozempic delivered yesterday: check if delivery arrived safely and answer any questions.',callDraft:'Authenticate (DoB) & check in with Carlos — his Ozempic was delivered yesterday to his Miami address. Ask if it arrived safely and if he has any questions about the medication.',textDraft:'Hi Carlos, this is Safer Pharmacy. Just checking in — did your delivery arrive safely? Any questions? Can you call us back on this number please?',due:'Today',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Mar 20',summary:'New patient intake. Transferring from Walgreens — Ozempic 1mg prescribed by Dr. Lopez.'},{type:'call',direction:'in',time:'Mar 22',summary:'Called to confirm Miami delivery address and insurance info. Blue Cross on file.'},{type:'sms',direction:'out',time:'Mar 28',text:'Your prescription is being processed. Estimated delivery: March 30.'},{type:'call',direction:'in',time:'Mar 29',summary:'Asked about Ozempic storage requirements. Advised refrigeration before first use.'}],serviceEvent:{title:'Ozempic 1mg delivered on Mar 30, first delivery',scheduled:'Scheduled for Mar 31: day-1 delivery check-in',date:'Mar 30'}},
+  {id:5,industryId:'medical',notifTitle:'Treatment check-in: James W.',contact:'James W.',rel:'Patient',type:'check-in',summary:'48h post immunotherapy cycle 3: check in on side effects and recovery.',callDraft:'Authenticate (DoB) & check in on James 48h after immunotherapy cycle 3. Ask about nausea, fatigue, appetite, rash, diarrhea frequency, dyspnea, visual changes, and liver symptoms (CTCAE criteria). If concerning, offer to move up his next visit.',textDraft:'Hi James, this is Dr. Ali\'s office. We hope you\'re recovering well and would like to check in. Can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Jan 15',summary:'Initial consultation with Dr. Ali. Discussed treatment plan for stage II lymphoma.'},{type:'call',direction:'in',time:'Feb 3',summary:'Completed immunotherapy cycle 1. Tolerated well, mild headache.'},{type:'call',direction:'out',time:'Feb 5',summary:'AI check-in: Asked about headache and hydration after cycle 1. James feeling better.'},{type:'call',direction:'in',time:'Mar 1',summary:'Completed cycle 2. Some nausea but manageable with prescribed anti-emetics.'},{type:'call',direction:'in',time:'Mar 25',summary:'Pre-cycle 3 bloodwork reviewed. White cell count adequate, cleared to proceed.'}],serviceEvent:{title:'Immunotherapy cycle 3 completed on Mar 29',scheduled:'Scheduled for Mar 31: 48h post-treatment check-in',date:'Mar 29'}},
+  {id:6,industryId:'equipment_rental',notifTitle:'Equipment check-in: Dave T.',contact:'Dave T.',rel:'Client',type:'check-in',summary:'40-ft boom delivered yesterday: check if setup went smoothly and operator has what they need.',callDraft:'Check in with Dave — the 40-ft boom was delivered yesterday for his Monday job. Make sure it\'s set up OK and the operator has what they need.',textDraft:'Hi Dave, John from All Access. Just checking in — is the boom set up and running OK on-site? Let us know if you need anything.',due:'Today',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Mar 20',summary:'First-time caller. Needs a 40-ft boom for exterior painting job starting Monday.'},{type:'sms',direction:'out',time:'Mar 21',text:'Quote sent: 40-ft boom lift, $650/week. Delivery + harnesses included.'},{type:'call',direction:'in',time:'Mar 25',summary:'Confirmed the rental. Delivery address: 742 Pine St. Needs it there by 7am Monday.'},{type:'call',direction:'in',time:'Mar 28',summary:'Asked about safety harness requirements. Confirmed we include harnesses with all boom rentals.'}],serviceEvent:{title:'40-ft boom delivered on-site on Mar 31',scheduled:'Scheduled for Apr 1: day-1 equipment check-in',date:'Mar 31'}},
   // ── Ahava Medical scenarios ──
-  {id:7,contact:'David R.',rel:'Patient',type:'check-in',summary:'Last visit >90 days ago, no communication in 30+ days: preventive care check-in.',callDraft:'Authenticate (DoB) & check in with David. Last visit was Nov 12 with Dr. Hoch — elevated A1C (6.1), elevated BP. Ask how lifestyle modifications are going, any concerns. Offer to schedule a follow-up.',textDraft:'Hi David, this is Dr. Hoch\'s office with Ahava Medical. It\'s been a while since your last visit (Nov 12). We\'d love to check in — can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Nov 12',summary:'Routine annual physical with Dr. Hoch. Elevated A1C (6.1, prediabetic range), elevated BP 142/88, BMI 33. Discussed lifestyle modifications. Patient expressed frustration with prior diet attempts.'},{type:'call',direction:'in',time:'Nov 18',summary:'Patient called to ask about lab results, spoke with front desk, told normal range, doctor will discuss at next visit.'}],serviceEvent:{title:'Last visit Nov 12, 2025 with Dr. Hoch — A1C 6.1, BP 142/88',scheduled:'Scheduled for Feb 10: wellness check-in (>90 days, no communication in 30+)',date:'Nov 12'}},
-  {id:8,contact:'Maria S.',rel:'Patient',type:'check-in',summary:'Last visit >180 days ago: preventive care check-in.',callDraft:'Authenticate (DoB) & check in with Maria. Last visit was Oct 2 with Dr. Fakheri — post-PT follow-up, back pain resolved. Ask how she\'s been feeling, any new concerns. Offer to schedule a routine check-up.',textDraft:'Hi Maria, this is Dr. Fakheri\'s office with Ahava Medical. It\'s been a while since your last visit (Oct 2). We\'d love to check in — can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Sep 8',summary:'Follow-up with PT/Rehab for lower back pain. Patient improving, discharged from PT, BMI 29. Referred back to PCP for ongoing management.'},{type:'call',direction:'in',time:'Oct 2',summary:'Post-PT follow-up with Dr. Fakheri. Back pain resolved, routine labs ordered, BMI noted but not discussed per patient preference.'},{type:'sms',direction:'out',time:'Oct 10',text:'Your lab results are in, all normal. Call if you have questions.'}],serviceEvent:{title:'Last visit Oct 2, 2025 with Dr. Fakheri — back pain resolved, labs normal',scheduled:'Scheduled for Apr 2: wellness check-in (>180 days since visit)',date:'Oct 2'}},
-  {id:9,contact:'Rachel K.',rel:'Patient',type:'check-in',summary:'Last visit 60 days ago, mentioned wanting to get healthier: preventive care check-in.',callDraft:'Authenticate (DoB) & check in with Rachel. Last visit was Feb 3 with Dr. Fakheri — mild hypertension 138/86, BMI 31, stress and sleep issues, prescribed melatonin. She mentioned wanting to get healthier for her kids. Ask how the melatonin is working, how she\'s feeling. Offer to schedule a wellness visit.',textDraft:'Hi Rachel, this is Dr. Fakheri\'s office with Ahava Medical. It\'s been a while since your last visit (Feb 3). We\'d love to check in — can you call us back on this number please?',due:'May 4',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Jan 15',summary:'Well-child visit for her son (age 8) with Dr. Kabariti. Child healthy, routine vaccines administered.'},{type:'call',direction:'in',time:'Feb 3',summary:'Rachel\'s own visit with Dr. Fakheri. Routine check-up — BMI 31, mild hypertension (138/86), discussed stress and sleep issues, prescribed melatonin. Patient mentioned wanting to get healthier for her kids.'}],serviceEvent:{title:'Last visit Feb 3, 2026 with Dr. Fakheri — BMI 31, mild hypertension',scheduled:'Scheduled for May 4: wellness check-in (90 days, patient expressed health goals)',date:'Feb 3'}},
-  {id:10,contact:'James T.',rel:'Patient',type:'renewal',summary:'Rx renewal overdue and lab follow-up needed: refill reminder + wellness check-in.',callDraft:'Authenticate (DoB) & call James about his overdue prescription renewal — Metformin 1000mg and Amlodipine 5mg were due for refill in Feb. Also, his last visit was Aug 20 with Dr. Hoch, A1C was 7.2 and lab recheck was recommended at 6 months. Ask if he\'d like to schedule both a refill and a follow-up visit.',textDraft:'Hi James, this is Dr. Hoch\'s office with Ahava Medical. You have a prescription renewal coming due and we\'d like to schedule a follow-up. Can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Aug 20',summary:'Routine visit with Dr. Hoch. Type 2 diabetes (managed, A1C 7.2), hypertension, BMI 36. On Metformin 1000mg and Amlodipine 5mg. Discussed adding to regimen, patient declined at the time.'},{type:'sms',direction:'out',time:'Feb 10',text:'Rx renewal reminder. No response.'}],serviceEvent:{title:'Rx refill overdue since Feb 2026 — Metformin 1000mg, Amlodipine 5mg',scheduled:'Scheduled for Apr 1: Rx renewal reminder + wellness check-in (>180 days, lab follow-up needed)',date:'Feb 10'}},
+  {id:7,industryId:'medical',notifTitle:'Wellness check-in: David R.',contact:'David R.',rel:'Patient',type:'check-in',summary:'Last visit >90 days ago, no communication in 30+ days: preventive care check-in.',callDraft:'Authenticate (DoB) & check in with David. Last visit was Nov 12 with Dr. Hoch — elevated A1C (6.1), elevated BP. Ask how lifestyle modifications are going, any concerns. Offer to schedule a follow-up.',textDraft:'Hi David, this is Dr. Hoch\'s office with Ahava Medical. It\'s been a while since your last visit (Nov 12). We\'d love to check in — can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Nov 12',summary:'Routine annual physical with Dr. Hoch. Elevated A1C (6.1, prediabetic range), elevated BP 142/88, BMI 33. Discussed lifestyle modifications. Patient expressed frustration with prior diet attempts.'},{type:'call',direction:'in',time:'Nov 18',summary:'Patient called to ask about lab results, spoke with front desk, told normal range, doctor will discuss at next visit.'}],serviceEvent:{title:'Last visit Nov 12, 2025 with Dr. Hoch — A1C 6.1, BP 142/88',scheduled:'Scheduled for Feb 10: wellness check-in (>90 days, no communication in 30+)',date:'Nov 12'}},
+  {id:8,industryId:'medical',notifTitle:'Wellness check-in: Maria S.',contact:'Maria S.',rel:'Patient',type:'check-in',summary:'Last visit >180 days ago: preventive care check-in.',callDraft:'Authenticate (DoB) & check in with Maria. Last visit was Oct 2 with Dr. Fakheri — post-PT follow-up, back pain resolved. Ask how she\'s been feeling, any new concerns. Offer to schedule a routine check-up.',textDraft:'Hi Maria, this is Dr. Fakheri\'s office with Ahava Medical. It\'s been a while since your last visit (Oct 2). We\'d love to check in — can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Sep 8',summary:'Follow-up with PT/Rehab for lower back pain. Patient improving, discharged from PT, BMI 29. Referred back to PCP for ongoing management.'},{type:'call',direction:'in',time:'Oct 2',summary:'Post-PT follow-up with Dr. Fakheri. Back pain resolved, routine labs ordered, BMI noted but not discussed per patient preference.'},{type:'sms',direction:'out',time:'Oct 10',text:'Your lab results are in, all normal. Call if you have questions.'}],serviceEvent:{title:'Last visit Oct 2, 2025 with Dr. Fakheri — back pain resolved, labs normal',scheduled:'Scheduled for Apr 2: wellness check-in (>180 days since visit)',date:'Oct 2'}},
+  {id:9,industryId:'medical',notifTitle:'Wellness check-in: Rachel K.',contact:'Rachel K.',rel:'Patient',type:'check-in',summary:'Last visit 60 days ago, mentioned wanting to get healthier: preventive care check-in.',callDraft:'Authenticate (DoB) & check in with Rachel. Last visit was Feb 3 with Dr. Fakheri — mild hypertension 138/86, BMI 31, stress and sleep issues, prescribed melatonin. She mentioned wanting to get healthier for her kids. Ask how the melatonin is working, how she\'s feeling. Offer to schedule a wellness visit.',textDraft:'Hi Rachel, this is Dr. Fakheri\'s office with Ahava Medical. It\'s been a while since your last visit (Feb 3). We\'d love to check in — can you call us back on this number please?',due:'May 4',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Jan 15',summary:'Well-child visit for her son (age 8) with Dr. Kabariti. Child healthy, routine vaccines administered.'},{type:'call',direction:'in',time:'Feb 3',summary:'Rachel\'s own visit with Dr. Fakheri. Routine check-up — BMI 31, mild hypertension (138/86), discussed stress and sleep issues, prescribed melatonin. Patient mentioned wanting to get healthier for her kids.'}],serviceEvent:{title:'Last visit Feb 3, 2026 with Dr. Fakheri — BMI 31, mild hypertension',scheduled:'Scheduled for May 4: wellness check-in (90 days, patient expressed health goals)',date:'Feb 3'}},
+  {id:10,industryId:'medical',notifTitle:'Rx renewal + visit: James T.',contact:'James T.',rel:'Patient',type:'renewal',summary:'Rx renewal overdue and lab follow-up needed: refill reminder + wellness check-in.',callDraft:'Authenticate (DoB) & call James about his overdue prescription renewal — Metformin 1000mg and Amlodipine 5mg were due for refill in Feb. Also, his last visit was Aug 20 with Dr. Hoch, A1C was 7.2 and lab recheck was recommended at 6 months. Ask if he\'d like to schedule both a refill and a follow-up visit.',textDraft:'Hi James, this is Dr. Hoch\'s office with Ahava Medical. You have a prescription renewal coming due and we\'d like to schedule a follow-up. Can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Aug 20',summary:'Routine visit with Dr. Hoch. Type 2 diabetes (managed, A1C 7.2), hypertension, BMI 36. On Metformin 1000mg and Amlodipine 5mg. Discussed adding to regimen, patient declined at the time.'},{type:'sms',direction:'out',time:'Feb 10',text:'Rx renewal reminder. No response.'}],serviceEvent:{title:'Rx refill overdue since Feb 2026 — Metformin 1000mg, Amlodipine 5mg',scheduled:'Scheduled for Apr 1: Rx renewal reminder + wellness check-in (>180 days, lab follow-up needed)',date:'Feb 10'}},
+  // ── Residential agent scenarios (Acme Realty) ──
+  {id:12,industryId:'residential',notifTitle:'Homeiversary: Jennifer L.',contact:'Jennifer L.',rel:'Buyer',type:'renewal',summary:'1-year homeiversary: comps show ~14% appreciation since close — offer fresh equity update.',callDraft:'Call Jennifer for her 1-year homeiversary at 412 Elm. Comps show ~14% appreciation since close. Offer a fresh equity / market analysis and ask if she has friends thinking of buying or selling.',textDraft:'Hi Jennifer, James from Acme Realty. Happy 1-year at 412 Elm! Homes in your area are selling strong — happy to send you a fresh equity update if useful. Reply GO and I\'ll put it together.',due:'Today',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Feb 18, 2025',summary:'First call: looking for a 3BR in East Austin, budget up to $625k, hoping to close by April.'},{type:'sms',direction:'out',time:'Feb 22, 2025',text:'Sending you 4 listings to walk through this weekend — 412 Elm is the standout for budget + commute.'},{type:'call',direction:'in',time:'Mar 14, 2025',summary:'Walked 412 Elm. Loved the kitchen, wants to put in an offer at $615k.'},{type:'sms',direction:'out',time:'Apr 28, 2025',text:'Closing day! 412 Elm is officially yours 🎉'}],serviceEvent:{title:'412 Elm closed Apr 28, 2025 — $615,000',scheduled:'Scheduled for Apr 28: 12-month homeiversary equity check-in',date:'Apr 28, 2025'}},
+  {id:13,industryId:'residential',notifTitle:'Listing follow-up: Robert P.',contact:'Robert P.',rel:'Prospect',type:'follow-up',summary:'Inquired on 89 Pine listing yesterday: follow up with showing availability this week.',callDraft:'Call Robert about the 89 Pine listing he asked about yesterday. Confirm budget, timing, and offer 2-3 showing slots this week. Ask if he wants to see comparable listings in the same area.',textDraft:'Hi Robert, James from Acme Realty. Following up on the 89 Pine inquiry — I have showing slots Wed 4pm or Thu 11am. Want me to hold one for you?',due:'Today',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Yesterday, 3:42p',summary:'Called from Zillow listing for 89 Pine. Looking in the $400-450k range, pre-approved with Wells Fargo, wants to see it this week.'}],serviceEvent:{title:'89 Pine inquiry from Zillow on Apr 27',scheduled:'Scheduled for Apr 28: next-day listing inquiry follow-up',date:'Apr 27'}},
+  // ── Gastroenterology scenarios (Metro GI) ──
+  {id:14,industryId:'gastroenterology',notifTitle:'Pre-op confirmation: Patricia M.',contact:'Patricia M.',rel:'Patient',type:'check-in',summary:'Colonoscopy in 48h: confirm bowel prep started, anticoagulant hold, NPO, transport escort.',callDraft:'Authenticate (DoB) & confirm Patricia is set for her screening colonoscopy on Apr 30 at GI Lab Room 2. Verify she started bowel prep tonight, held her warfarin per Dr. Chen\'s instructions on Apr 23, NPO after midnight, and has a transport escort confirmed. Flag any issues to Dr. Chen.',textDraft:'Hi Patricia, this is Dr. Chen\'s office. Your colonoscopy is in 48h. Quick confirm: bowel prep tonight, NPO after midnight, warfarin held since Apr 23, escort confirmed. Reply YES if all set or call us if any questions.',due:'Today',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Mar 4',summary:'Referral from PCP — screening colonoscopy at age 50. Family history of colon cancer (mother).'},{type:'call',direction:'in',time:'Mar 18',summary:'Pre-procedure consult with Dr. Chen. Discussed prep, anticoagulation hold, transport escort. Booked for Apr 30, 9am.'},{type:'sms',direction:'out',time:'Apr 23',text:'Reminder: stop warfarin today (Apr 23) per Dr. Chen. Continue your other meds.'}],serviceEvent:{title:'Screening colonoscopy on Apr 30 with Dr. Chen (GI Lab Room 2)',scheduled:'Scheduled for Apr 28: 48h pre-op confirmation',date:'Apr 30'}},
+  {id:15,industryId:'gastroenterology',notifTitle:'Open slot: Thomas G.',contact:'Thomas G.',rel:'Patient',type:'follow-up',summary:'Cancellation backfill: surveillance colonoscopy slot opened in 48h — text waitlist priority #1.',callDraft:'Per clinician-assigned waitlist priority, offer Thomas the 9am slot on Apr 30 (cancellation). He\'s overdue for surveillance after polypectomy 3 years ago. First YES is handed off to staff for confirmation — no AI auto-booking.',textDraft:'Hi Thomas, this is Dr. Chen\'s office. A surveillance colonoscopy slot just opened: Apr 30 at 9am. Want it? Reply YES and we\'ll call you to confirm. (Reply NO and we\'ll keep you on the list.)',due:'Today',sendAs:'text',earlierItems:[{type:'call',direction:'in',time:'Mar 14, 2023',summary:'Surveillance colonoscopy with Dr. Chen — 2 tubular adenomas removed, recommended 3-year follow-up.'},{type:'sms',direction:'out',time:'Mar 1',text:'Surveillance colonoscopy due. Reply BOOK to schedule. We\'ll add you to the waitlist for earlier slots.'},{type:'sms',direction:'in',time:'Mar 1',text:'Yes book me, but wait list me for anything sooner.'}],serviceEvent:{title:'Open slot: Apr 30, 9am at GI Lab Room 1 (cancellation backfill)',scheduled:'Scheduled for Apr 28: waitlist offer (clinician-priority order)',date:'Apr 28'}},
   // ── McGill ENT (Dr. Richardson) surgery scenario ──
-  {id:11,contact:'Mark R.',rel:'Patient',type:'check-in',summary:'Post-op day 1 after total thyroidectomy: safety check on voice, swallowing, neck swelling, and hypocalcemia symptoms.',callDraft:'Authenticate (DoB) & check in on Mark post-op day 1 after total thyroidectomy with Dr. Richardson. Ask about voice quality, swallowing, expanding neck swelling or bleeding, and hypocalcemia symptoms (perioral or fingertip paresthesia, muscle cramps, Chvostek sign). Confirm he is taking calcium carbonate 1g TID and calcitriol 0.25mcg daily as prescribed. If any red flags (expanding hematoma, stridor, severe paresthesia), page Dr. Richardson immediately. Otherwise reassure and confirm clinic follow-up next week for pathology.',textDraft:'Hi Mark, this is Dr. Richardson\'s office. We hope you\'re recovering well and would like to check in. Can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Jan 14',summary:'Initial consult with Dr. Richardson — 3.2cm left thyroid nodule, FNA biopsy Bethesda VI (papillary carcinoma). Total thyroidectomy recommended and discussed.'},{type:'call',direction:'in',time:'Feb 2',summary:'Pre-op clinic. Risks reviewed (RLN injury, hypocalcemia, hematoma). Consent signed. Surgery scheduled Mar 31, MUHC Glen site.'},{type:'sms',direction:'out',time:'Mar 28',text:'Reminder: surgery Monday Mar 31, 7am check-in at MUHC Glen. NPO after midnight Sunday.'},{type:'call',direction:'in',time:'Mar 31',summary:'Surgery day. Total thyroidectomy by Dr. Richardson — no intraop complications, parathyroids preserved, RLNs monitored intact. Discharged same day on calcium carbonate 1g TID + calcitriol 0.25mcg daily. F/U in clinic next week for pathology.'}],serviceEvent:{title:'Total thyroidectomy on Mar 31 with Dr. Richardson (MUHC Glen)',scheduled:'Scheduled for Apr 1: post-op day 1 safety check (24h, all surgical patients)',date:'Mar 31'}},
+  {id:11,industryId:'surgery',notifTitle:'Post-op safety check: Mark R.',contact:'Mark R.',rel:'Patient',type:'check-in',summary:'Post-op day 1 after total thyroidectomy: safety check on voice, swallowing, neck swelling, and hypocalcemia symptoms.',callDraft:'Authenticate (DoB) & check in on Mark post-op day 1 after total thyroidectomy with Dr. Richardson. Ask about voice quality, swallowing, expanding neck swelling or bleeding, and hypocalcemia symptoms (perioral or fingertip paresthesia, muscle cramps, Chvostek sign). Confirm he is taking calcium carbonate 1g TID and calcitriol 0.25mcg daily as prescribed. If any red flags (expanding hematoma, stridor, severe paresthesia), page Dr. Richardson immediately. Otherwise reassure and confirm clinic follow-up next week for pathology.',textDraft:'Hi Mark, this is Dr. Richardson\'s office. We hope you\'re recovering well and would like to check in. Can you call us back on this number please?',due:'Today',sendAs:'call',earlierItems:[{type:'call',direction:'in',time:'Jan 14',summary:'Initial consult with Dr. Richardson — 3.2cm left thyroid nodule, FNA biopsy Bethesda VI (papillary carcinoma). Total thyroidectomy recommended and discussed.'},{type:'call',direction:'in',time:'Feb 2',summary:'Pre-op clinic. Risks reviewed (RLN injury, hypocalcemia, hematoma). Consent signed. Surgery scheduled Mar 31, MUHC Glen site.'},{type:'sms',direction:'out',time:'Mar 28',text:'Reminder: surgery Monday Mar 31, 7am check-in at MUHC Glen. NPO after midnight Sunday.'},{type:'call',direction:'in',time:'Mar 31',summary:'Surgery day. Total thyroidectomy by Dr. Richardson — no intraop complications, parathyroids preserved, RLNs monitored intact. Discharged same day on calcium carbonate 1g TID + calcitriol 0.25mcg daily. F/U in clinic next week for pathology.'}],serviceEvent:{title:'Total thyroidectomy on Mar 31 with Dr. Richardson (MUHC Glen)',scheduled:'Scheduled for Apr 1: post-op day 1 safety check (24h, all surgical patients)',date:'Mar 31'}},
 ];
 
 // Transcript data for post-send simulation
@@ -309,6 +372,10 @@ const TRANSCRIPTS={
   9:{outcome:'transfer',label:'Transferred to Dr. Fakheri',lines:[{w:'a',t:'Hi, this is Ahava Medical calling for Rachel. May I confirm your date of birth?'},{w:'p',t:'September 30th, 1987.'},{w:'a',t:'Thank you Rachel. Last time you saw Dr. Fakheri, you mentioned wanting to focus on getting healthier. How\'s that been going?'},{w:'p',t:'Oh, that\'s really thoughtful. The melatonin helped with sleep a lot. But I still don\'t know where to start with the rest.'},{w:'a',t:'That\'s great about the sleep. Dr. Fakheri can put together a personalized wellness plan — nutrition guidance, activity goals, maybe some additional support.'},{w:'p',t:'That sounds helpful. But I have questions — is this covered by insurance? What would it look like?'},{w:'a',t:'Great questions. Would you prefer to speak directly with someone from Dr. Fakheri\'s team?'},{w:'p',t:'Yes, can you transfer me?'},{w:'a',t:'Absolutely. Let me connect you now. One moment...'},{w:'s',t:'📞 Call transferred to Dr. Fakheri\'s office.'}]},
   10:{outcome:'booked',label:'Telehealth + Rx refill booked',lines:[{w:'a',t:'Hi, this is Ahava Medical calling for James. May I confirm your date of birth?'},{w:'p',t:'March 22nd, 1958.'},{w:'a',t:'Thank you James. Your Metformin and Amlodipine prescriptions were due for renewal in February and haven\'t been refilled. Is everything OK?'},{w:'p',t:'Yeah, I know. I just kept putting it off. Things have been hectic.'},{w:'a',t:'I understand. It\'s important to stay on your medications for blood sugar and blood pressure. We can refill right away. Would you also like to schedule a visit with Dr. Hoch? It\'s been about 7 months and he recommended a lab recheck.'},{w:'p',t:'Yeah, you\'re right. Can we do telehealth?'},{w:'a',t:'Wednesday at 3pm with Dr. Hoch via telehealth. And I\'ll process the Rx refills today.'},{w:'p',t:'That works. Thanks for calling — I probably wouldn\'t have gotten around to it otherwise.'},{w:'a',t:'That\'s exactly why we reach out. We\'ll send the link and confirm refills by text. Take care James!'}]},
   11:{outcome:'booked',label:'Post-op check — mild paresthesia, reassured',lines:[{w:'a',t:'Hi, this is Dr. Richardson\'s office calling for Mark. May I confirm your date of birth?'},{w:'p',t:'April 17th, 1968.'},{w:'a',t:'Thank you Mark. Calling to check in the day after your surgery. How are you feeling overall?'},{w:'p',t:'Sore, but OK. Throat is pretty scratchy.'},{w:'a',t:'That\'s normal after surgery. How\'s your voice — any hoarseness beyond the scratchy feeling?'},{w:'p',t:'A little raspy, but I can talk OK.'},{w:'a',t:'Good. Any trouble swallowing water or soft foods?'},{w:'p',t:'Swallowing is fine. Slow but fine.'},{w:'a',t:'Any swelling in your neck that feels like it\'s getting worse, or any difficulty breathing?'},{w:'p',t:'No, neck feels tight but not worse.'},{w:'a',t:'Good. Now — any tingling or numbness in your fingertips, lips, or around your mouth? Muscle cramps or spasms?'},{w:'p',t:'Actually yeah, a bit of tingling in my fingertips this morning. It settled after I took the calcium.'},{w:'a',t:'Thanks for telling me. That tingling can happen and the calcium is the right response. Have you been taking the calcium carbonate three times a day and the calcitriol once daily, as Dr. Richardson prescribed?'},{w:'p',t:'Yes, took both with breakfast.'},{w:'a',t:'Perfect. If the tingling comes back and doesn\'t settle within an hour of a calcium dose — or if you notice muscle cramps, spasms around your mouth, or any new trouble breathing — call us right away and we\'ll get Dr. Richardson on the line. Otherwise keep taking the meds as prescribed. Dr. Richardson will see you in clinic next week to go over pathology.'},{w:'p',t:'Sounds good, thanks.'},{w:'a',t:'Take care Mark. Rest up and we\'ll see you next week.'}]},
+  12:{outcome:'booked',label:'Equity update requested',lines:[{w:'a',t:'Hi, this is James from Acme Realty. Is this Jennifer?'},{w:'p',t:'Yes! Hi James, what\'s up?'},{w:'a',t:'Happy 1-year at 412 Elm. Hard to believe it\'s been a year already.'},{w:'p',t:'I know, time flew. Place still feels great.'},{w:'a',t:'Good to hear. Real reason I\'m calling — comps in your block are up about 14% since you closed. I can put together a fresh equity snapshot if it would be useful. No strings, just helpful to know your number.'},{w:'p',t:'Yeah, send it. Curious to see.'},{w:'a',t:'I\'ll have it in your inbox tomorrow. Anyone in your circle thinking of buying or selling? Happy to help.'},{w:'p',t:'Actually my coworker just started looking. I\'ll connect you.'},{w:'a',t:'Appreciate that, Jennifer. Talk soon!'}]},
+  13:{outcome:'booked',label:'Showing scheduled',lines:[{w:'a',t:'Hi, this is James from Acme Realty calling about 89 Pine. Is this a good time?'},{w:'p',t:'Yeah, hi. I was hoping you\'d call.'},{w:'a',t:'Saw you inquired yesterday from Zillow. Quick check — are you pre-approved, and what\'s your timeline?'},{w:'p',t:'Yeah, pre-approved with Wells Fargo up to $450k. Looking to close in the next 60 days.'},{w:'a',t:'Perfect, 89 Pine is well within that. I have showings Wednesday at 4pm or Thursday at 11am — either work?'},{w:'p',t:'Thursday 11 works.'},{w:'a',t:'Booked. I\'ll send you 2-3 comparable listings nearby so you can see them the same morning.'},{w:'p',t:'That would be great, thanks.'},{w:'a',t:'See you Thursday at 89 Pine, 11am sharp.'}]},
+  14:{outcome:'confirmed',label:'Pre-op confirmed',lines:[{w:'a',t:'Hi, this is Dr. Chen\'s office calling for Patricia. May I confirm your date of birth?'},{w:'p',t:'May 8th, 1975.'},{w:'a',t:'Thank you Patricia. Calling to confirm your colonoscopy is set for Wednesday at 9am. Quick checklist — did you stop your warfarin on April 23rd as Dr. Chen instructed?'},{w:'p',t:'Yes, last dose was the morning of the 23rd.'},{w:'a',t:'Good. Bowel prep tonight — have you picked it up?'},{w:'p',t:'Got it from the pharmacy yesterday. First dose at 6pm, second at 4am.'},{w:'a',t:'Perfect. NPO after midnight — clear liquids only up until then. And do you have a transport escort confirmed for Wednesday?'},{w:'p',t:'My husband is driving me.'},{w:'a',t:'You\'re all set. Check in at GI Lab Room 2 by 8:30am Wednesday. Call us if anything comes up overnight.'},{w:'p',t:'Will do, thanks.'}]},
+  15:{outcome:'booked',label:'Slot accepted — handed to staff',lines:[{w:'t',t:'Hi Thomas, this is Dr. Chen\'s office. A surveillance colonoscopy slot just opened: Apr 30 at 9am. Want it? Reply YES and we\'ll call you to confirm.'},{w:'s',t:'✓ Text delivered'},{w:'s',t:'📞 Thomas G. is replying...'},{w:'p',t:'YES please, I\'ve been waiting.'},{w:'s',t:'✓ Reply received — handed off to staff for confirmation.'},{w:'a',t:'Hi Thomas, this is Dr. Chen\'s office. Got your YES — confirming Apr 30 at 9am for your surveillance colonoscopy. Bowel prep instructions and anticoagulant hold details will be texted to you tonight.'},{w:'p',t:'Sounds good. I held my plavix already, the GI nurse told me last week.'},{w:'a',t:'Great. See you Wednesday at 8:30am check-in, GI Lab Room 1.'}]},
 };
 
 // ── Shared Components ──
@@ -472,24 +539,81 @@ function ChevPill({label,options,value,onChange}){
   </span>);
 }
 
+// ── Industry picker (matches industry-auto-config IndustryPickerSheet) ──
+// Full-page parent → child drill-down. `currentId` is the active industry; `onPick`
+// receives the chosen child industry id. `onCancel` closes without changing.
+function IndustryPickerSheet({currentId,onPick,onCancel}){
+  const[drilledParent,setDrilledParent]=useState(null);
+  const[customName,setCustomName]=useState('');
+  const resolveChildren=(parent)=>parent.children.map(id=>INDUSTRIES[id]).filter(Boolean);
+
+  if(drilledParent){
+    const children=resolveChildren(drilledParent);
+    return(
+      <div className="phone">
+        <StatusBar/>
+        <div className="nav-header">
+          <button className="picker-back-btn" aria-label="Back" onClick={()=>setDrilledParent(null)}>‹</button>
+          <div className="nav-title">{drilledParent.name}</div>
+          <button className="done-btn" onClick={onCancel}>Done</button>
+        </div>
+        <div className="list-container">
+          <div className="list-section">
+            {children.map(ind=>(
+              <div key={ind.id} className="list-row" onClick={()=>onPick(ind.id)}>
+                <span style={{color:ind.id===currentId?'var(--accent)':'var(--primary-text)',fontWeight:ind.id===currentId?600:400}}>{ind.label}</span>
+                {ind.id===currentId&&<span style={{color:'var(--accent)',fontSize:18}}>✓</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div className="phone">
+      <StatusBar/>
+      <div className="nav-header">
+        <div className="nav-title">Industry</div>
+        <button className="done-btn" onClick={onCancel}>Done</button>
+      </div>
+      <div className="list-container">
+        <div className="list-section">
+          {INDUSTRY_TREE.map(parent=>{
+            const children=resolveChildren(parent);
+            if(children.length===0)return null;
+            const containsCurrent=parent.children.includes(currentId);
+            return(
+              <div key={parent.id} className="list-row" onClick={()=>setDrilledParent(parent)}>
+                <span style={{fontWeight:containsCurrent?600:400}}>{parent.name}</span>
+                <span className="list-row-chevron">›</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="list-section-header">Other</div>
+        <div className="list-section">
+          <div className="list-row" style={{cursor:'default'}}>
+            <span>Other, specify</span>
+          </div>
+          <input type="text" className="list-custom-input" placeholder="e.g. Law firm, fitness studio..." value={customName} onChange={e=>setCustomName(e.target.value)}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Screen 2: Secretary Settings ──
-function ScenariosScreen({onNavigate}){
-  const allScenarios=[
-    {id:'mc',direction:'inbound',condition:"If work call missed",instructions:'Text back instantly apologizing & asking how we can help.',auto:true,rel:'prospect',event:'missed call',timing:'instantly',action:'text'},
-    {id:'r1',direction:'outbound',condition:"If patient's purchase is due for renewal",instructions:'Text a refill reminder. Confirm delivery address.',auto:false,rel:'patient',event:'purchase',timing:'in 2 days',action:'text'},
-    {id:'c1',direction:'outbound',condition:"If patient's delivery was just completed",instructions:'Text next day to check delivery arrived safely.',auto:true,rel:'patient',event:'delivery',timing:'next day',action:'text'},
-    {id:'r2',direction:'outbound',condition:"If patient's appointment is due",instructions:'Call to schedule routine follow-up scan.',auto:false,rel:'patient',event:'appointment',timing:'in 1 week',action:'call'},
-    {id:'c2',direction:'outbound',condition:"If patient's appointment just completed",instructions:'Call 48h later to check on side effects and recovery. Ask about rash, diarrhea frequency, dyspnea, visual changes, liver symptoms (CTCAE criteria).',auto:false,rel:'patient',event:'appointment',timing:'in 48h',action:'call'},
-    {id:'r3',direction:'outbound',condition:"If client's purchase is due for renewal",instructions:'Text 2 days before rental ends. Confirm extension or pickup.',auto:false,rel:'client',event:'purchase',timing:'in 2 days',action:'text'},
-    {id:'c3',direction:'outbound',condition:"If client's delivery was just completed",instructions:'Text next day to check setup went smoothly.',auto:true,rel:'client',event:'delivery',timing:'next day',action:'text'},
-    {id:'pc',direction:'outbound',condition:"If patient's last appointment is >90 days ago",instructions:'Text a preventive care check-in, then if no response in 7 days, make an AI call.',auto:false,rel:'patient',event:'appointment',timing:'in 90 days',action:'text'},
-    {id:'rx',direction:'outbound',condition:"If patient's purchase renewal is overdue",instructions:'Call to remind about overdue Rx renewal and offer to schedule a visit.',auto:false,rel:'patient',event:'purchase',timing:'overdue',action:'call'},
-  ];
+// `industry` is the current industry object (from INDUSTRIES).
+// `scenarios` / `setScenarios` is per-industry state owned by the App so edits persist across switches.
+function ScenariosScreen({onNavigate,industry,scenarios,setScenarios,onChangeIndustry}){
   const[editing,setEditing]=useState(null);
   const[adding,setAdding]=useState(false);
   const[voiceText,setVoiceText]=useState('');
   const[voiceLoading,setVoiceLoading]=useState(false);
   const[voiceDone,setVoiceDone]=useState(false);
+  const[showPicker,setShowPicker]=useState(false);
   const[eRel,setERel]=useState('');
   const[eEvent,setEEvent]=useState('');
   const[eTiming,setETiming]=useState('');
@@ -497,9 +621,19 @@ function ScenariosScreen({onNavigate}){
   const[eAuto,setEAuto]=useState(false);
   const[eDir,setEDir]=useState('outbound');
 
-  const relOpts=['patient','client','prospect','partner','vendor'];
-  const eventOpts=['lead','purchase','delivery','appointment','missed call'];
-  const timingOpts=['instantly','next day','in 48h','in 2 days','in 1 week','in 2 weeks','in 1 month','in 90 days','overdue'];
+  const relOpts=SCENARIO_REL_OPTIONS;
+  const eventOpts=SCENARIO_EVENT_OPTIONS;
+  const timingOpts=SCENARIO_TIMING_OPTIONS;
+
+  if(showPicker){
+    return(
+      <IndustryPickerSheet
+        currentId={industry.id}
+        onPick={(id)=>{setShowPicker(false);onChangeIndustry(id)}}
+        onCancel={()=>setShowPicker(false)}
+      />
+    );
+  }
 
   // ── Add Scenario: voice done → show structured result ──
   if(adding&&voiceDone){
@@ -633,6 +767,19 @@ function ScenariosScreen({onNavigate}){
         <span style={{fontSize:17,fontWeight:500,color:'var(--primary-text)',flex:1,textAlign:'center',marginRight:26}}>AI Secretary Settings</span>
       </div>
       <div className="screen-content"><div style={{padding:'0 16px'}}>
+        <div className="section-header">General</div>
+        <div className="card" style={{marginBottom:16,padding:0,overflow:'hidden'}}>
+          <div className="industry-row" onClick={()=>setShowPicker(true)}>
+            <span className="industry-row-label">Industry</span>
+            <span className="industry-row-value">{industry.label}</span>
+            <span className="industry-row-caret" aria-hidden="true">
+              <svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1.5 4L4 1.5L6.5 4"/>
+                <path d="M1.5 8L4 10.5L6.5 8"/>
+              </svg>
+            </span>
+          </div>
+        </div>
         <div className="section-header">Identity</div>
         <div className="card" style={{marginBottom:16}}>
           <div style={{padding:'4px 0 10px',borderBottom:'.5px solid var(--border)'}}>
@@ -661,9 +808,10 @@ function ScenariosScreen({onNavigate}){
         </div>
         <div className="section-header">Scenarios</div>
         <div className="card" style={{marginBottom:16}}>
-          {allScenarios.map((sc,i)=>(
+          {scenarios.length===0&&<div style={{padding:'12px 0',fontSize:14,color:'var(--secondary-text)'}}>No scenarios yet — tap "Add Scenario" to get started.</div>}
+          {scenarios.map((sc,i)=>(
             <div key={sc.id} onClick={()=>{setEditing(sc);setERel(sc.rel);setEEvent(sc.event);setETiming(sc.timing);setEAction(sc.action);setEAuto(sc.auto);setEDir(sc.direction)}}
-              style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',padding:'10px 0',borderBottom:i<allScenarios.length-1?'.5px solid var(--border)':'none',cursor:'pointer'}}>
+              style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',padding:'10px 0',borderBottom:i<scenarios.length-1?'.5px solid var(--border)':'none',cursor:'pointer'}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:15,fontWeight:600,color:'var(--primary-text)',marginBottom:2}}>{sc.condition}</div>
                 <div style={{fontSize:14,color:'var(--secondary-text)',lineHeight:1.4}}>{sc.instructions}</div>
@@ -687,7 +835,7 @@ function ScenariosScreen({onNavigate}){
 }
 
 // ── Screen 4: To-Do / Outbox ──
-function TodoScreen({onNavigate}){
+function TodoScreen({onNavigate,industryId}){
   const[filter,setFilter]=useState('todo');
   const[openThread,setOpenThread]=useState(null);
   const[threadSendAs,setThreadSendAs]=useState('text'); // 'text' or 'call'
@@ -697,9 +845,11 @@ function TodoScreen({onNavigate}){
   const[simState,setSimState]=useState(null); // null|'loading'|'playing'|'done'
   const[simLines,setSimLines]=useState([]);
   const[simIdx,setSimIdx]=useState(0);
+  // Filter TODOs to current industry — drives the inbox + the post-send simulation list.
+  const industryTodos=TODOS.filter(t=>t.industryId===industryId);
   const simScrollRef=useRef(null);
-  const pending=TODOS.filter(t=>!sentIds.includes(t.id));
-  const sent=TODOS.filter(t=>sentIds.includes(t.id));
+  const pending=industryTodos.filter(t=>!sentIds.includes(t.id));
+  const sent=industryTodos.filter(t=>sentIds.includes(t.id));
 
   // ── Full-page thread view (pushed on NavigationStack) ──
   const triggerRef=useRef(null);
@@ -922,7 +1072,7 @@ function TodoScreen({onNavigate}){
                     setSimIdx(0);
                     // If text mode for healthcare, prepend text + callback flow
                     const isTextMode=threadSendAs==='text';
-                    const isHealthcare=[1,2,4,5,7,8,9,10].includes(openThread.id);
+                    const isHealthcare=['medical','pharmacy','gastroenterology','surgery'].includes(openThread.industryId);
                     if(isTextMode&&isHealthcare){
                       const textDraft=openThread.textDraft;
                       tx._simLines=[{w:'t',t:textDraft},{w:'s',t:'✓ Text delivered'},{w:'s',t:'📞 '+openThread.contact+' is calling back...'},{w:'s',t:'AI answering inbound call'},...tx.lines];
@@ -987,7 +1137,12 @@ function TodoScreen({onNavigate}){
 
         {filter==='todo'&&(
           <div>
-            {TODOS.filter(t=>!sentIds.includes(t.id)).map(todo=>{
+            {industryTodos.length===0&&(
+              <div style={{padding:'40px 24px',textAlign:'center'}}>
+                <div style={{fontSize:14,color:'var(--secondary-text)'}}>No To-Dos for this industry yet.</div>
+              </div>
+            )}
+            {industryTodos.filter(t=>!sentIds.includes(t.id)).map(todo=>{
               const isUrgent=todo.due==='Today';
               return(
               <div className="contact-cell" key={todo.id} onClick={()=>{setOpenThread(todo);setThreadSendAs(todo.sendAs);setDraftEditing(false);setEditedDraft('')}}>
@@ -1010,7 +1165,7 @@ function TodoScreen({onNavigate}){
               );
             })}
             {/* Sent items show as read */}
-            {TODOS.filter(t=>sentIds.includes(t.id)).map(todo=>(
+            {industryTodos.filter(t=>sentIds.includes(t.id)).map(todo=>(
               <div className="contact-cell" key={todo.id}>
                 <div className="contact-cell-icon" style={{background:'var(--surface-darken)'}}>
                   {I.outbound({s:20,c:'var(--tertiary-text)'})}
@@ -1036,7 +1191,14 @@ function TodoScreen({onNavigate}){
 }
 
 // ── Screen 5: Push Notifications ──
-function NotifScreen(){
+// Derives notif cards from the same TODOS list as the To-Do screen so they
+// stay in lockstep with the industry filter.
+function NotifScreen({industryId}){
+  const notifs=TODOS.filter(t=>t.industryId===industryId).slice(0,6).map((t,i)=>({
+    title:t.notifTitle||t.contact,
+    body:t.summary,
+    time:i===0?'now':`${i*3+2}m ago`,
+  }));
   return(
     <div className="phone" style={{background:'#000'}}>
       <StatusBar/>
@@ -1045,14 +1207,10 @@ function NotifScreen(){
         <div style={{fontSize:17,color:'rgba(255,255,255,.7)',textAlign:'center',marginTop:4,marginBottom:32}}>Monday, March 31</div>
       </div>
       <div style={{padding:'0 16px',flex:1}}>
-        {[
-          {title:'Rx refill: Maria A.',body:'Ozempic refill coming due Apr 2. Confirm delivery to Florida address.',time:'now'},
-          {title:'Surveillance scan: Sarah K.',body:'6 months since last imaging — schedule routine follow-up scan.',time:'2m ago'},
-          {title:'Rental renewal: Luis M.',body:'Scissor lifts at 600 B St — rental ends in 2 days. Confirm extension.',time:'5m ago'},
-          {title:'Rx delivery check-in: Carlos R.',body:'Ozempic delivered yesterday. Check if it arrived safely.',time:'12m ago'},
-          {title:'Treatment check-in: James W.',body:'48h post immunotherapy cycle 3. Check on side effects and recovery.',time:'15m ago'},
-          {title:'Equipment check-in: Dave T.',body:'40-ft boom delivered yesterday. Check if setup went smoothly.',time:'18m ago'},
-        ].map((n,i)=>(
+        {notifs.length===0&&(
+          <div style={{textAlign:'center',color:'rgba(255,255,255,.5)',fontSize:14,marginTop:40}}>No notifications for this industry yet.</div>
+        )}
+        {notifs.map((n,i)=>(
           <div className="notif-card" key={i}>
             <div className="notif-header">
               <div className="notif-app-icon">Y²</div>
@@ -1071,19 +1229,33 @@ function NotifScreen(){
 // ── App ──
 function App(){
   const[screen,setScreen]=useState('todo');
+  // Industry is global so switching it from Settings instantly re-filters To-Do + Notifications.
+  // Default 'pharmacy' matches the pre-existing prototype framing.
+  const[industryId,setIndustryId]=useState('pharmacy');
+  // Per-industry scenarios state — edits persist across switches (mirrors industry-auto-config App).
+  const[scenariosByIndustry,setScenariosByIndustry]=useState({});
+  const industry=INDUSTRIES[industryId];
+  const scenarios=scenariosByIndustry[industry.id]??industry.auto_config_scenarios??[];
+  const setScenarios=(updater)=>{
+    setScenariosByIndustry(prev=>{
+      const current=prev[industry.id]??industry.auto_config_scenarios??[];
+      const next=typeof updater==='function'?updater(current):updater;
+      return{...prev,[industry.id]:next};
+    });
+  };
   const screens=[{key:'todo',label:'To-Do'},{key:'scenarios',label:'Secretary Settings'},{key:'notif',label:'Push Notifications'}];
   return(
     <>
       <div style={{textAlign:'center',padding:'8px 0 0'}}>
         <div style={{fontSize:20,fontWeight:700,color:'#fff',letterSpacing:'-.5px'}}>YouSquared</div>
-        <div style={{fontSize:12,color:'#888',marginTop:2}}>Scheduled Outbound & Contact Events</div>
+        <div style={{fontSize:12,color:'#888',marginTop:2}}>Scheduled Outbound & Contact Events · <span style={{color:'#FF8370',fontWeight:600}}>{industry.label}</span></div>
       </div>
       <div className="nav-bar">
         {screens.map(s=>(<button key={s.key} className={`nav-btn ${screen===s.key?'active':''}`} onClick={()=>setScreen(s.key)}>{s.label}</button>))}
       </div>
-      {screen==='scenarios'&&<ScenariosScreen onNavigate={setScreen}/>}
-      {screen==='todo'&&<TodoScreen onNavigate={setScreen}/>}
-      {screen==='notif'&&<NotifScreen/>}
+      {screen==='scenarios'&&<ScenariosScreen onNavigate={setScreen} industry={industry} scenarios={scenarios} setScenarios={setScenarios} onChangeIndustry={setIndustryId}/>}
+      {screen==='todo'&&<TodoScreen onNavigate={setScreen} industryId={industryId}/>}
+      {screen==='notif'&&<NotifScreen industryId={industryId}/>}
       <FeedbackChat/>
       <div style={{position:'fixed',bottom:8,left:12,fontSize:10,color:'var(--error)',maxWidth:220,lineHeight:1.3,zIndex:50}}>All health data in this prototype is illustrative and does not represent any real patients.</div>
     </>
