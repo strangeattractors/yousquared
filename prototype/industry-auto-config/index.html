@@ -305,9 +305,9 @@ const INDUSTRIES={
       availability_source_subfield:"showing_calendar",
     },
     auto_config_scenarios:[
-      {id:"rs1",direction:"outbound",condition:"If buyer's purchase date is in 12 months",instructions:"Text a homeiversary check-in offering a fresh comps / equity update.",auto:false,rel:"buyer",event:"purchase",timing:"in 12 months",action:"text"},
-      {id:"rs2",direction:"outbound",condition:"If prospect's listing inquiry is next day",instructions:"Follow up on the listing inquiry with showing availability this week.",auto:true,rel:"prospect",event:"listing inquiry",timing:"next day",action:"text"},
-      {id:"rs3",direction:"inbound",condition:"If prospect's call is missed",instructions:"Text back instantly apologizing and asking how you can help.",auto:true,rel:"prospect",event:"missed call",timing:"instantly",action:"text"},
+      {id:"rs_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch warm leads who inquired but haven't booked a showing or made an offer. First touch confirms receipt; follow-ups offer help with decision-blockers (financing, comps, timing).",cadence:["same day","+1 day","+2 days","+3 days","+7 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"prospect",event:"inquiry",timing:"same day",action:"text"},
+      {id:"rs1",direction:"outbound",condition:"Homeiversary Equity Update",instructions:"At 12 months post-close, text a homeiversary check-in offering a fresh comps / equity update.",auto:false,rel:"buyer",event:"purchase",timing:"in 12 months",action:"text"},
+      {id:"rs3",direction:"inbound",condition:"Missed Call Reply",instructions:"Text back instantly apologizing and asking how you can help.",auto:true,rel:"prospect",event:"missed call",timing:"instantly",action:"text"},
     ],
   },
   primary_care:{
@@ -358,9 +358,10 @@ const INDUSTRIES={
       availability_source_subfield:"provider_hours",
     },
     auto_config_scenarios:[
-      {id:"pc1",direction:"outbound",condition:"If patient's appointment is in 90 days",instructions:"Text a preventive care check-in to book a routine follow-up visit.",auto:false,rel:"patient",event:"appointment",timing:"in 90 days",action:"text"},
-      {id:"pc2",direction:"outbound",condition:"If patient's appointment just completed in 48h",instructions:"Call 48h post-visit to check on recovery, symptoms, and answer questions.",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"call"},
-      {id:"pc3",direction:"outbound",condition:"If patient's purchase is overdue",instructions:"Call to remind about overdue Rx renewal and offer to schedule a visit.",auto:false,rel:"patient",event:"purchase",timing:"overdue",action:"call"},
+      {id:"pc_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch new-patient inquiries who haven't booked the first appointment. First touch confirms receipt + insurance verification; follow-ups help with scheduling and answer questions.",cadence:["same day","+1 day","+2 days","+3 days","+7 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"prospect",event:"inquiry",timing:"same day",action:"text"},
+      {id:"pc1",direction:"outbound",condition:"Annual Wellness Recall",instructions:"At 90 days since last visit, text a preventive care check-in to book a routine follow-up.",auto:false,rel:"patient",event:"appointment",timing:"in 90 days",action:"text"},
+      {id:"pc2",direction:"outbound",condition:"Post-Visit Recovery Check",instructions:"Call 48h post-visit to check on recovery, symptoms, and answer questions.",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"call"},
+      {id:"pc3",direction:"outbound",condition:"Overdue Rx Renewal",instructions:"Call to remind about overdue Rx renewal and offer to schedule a visit.",auto:false,rel:"patient",event:"purchase",timing:"overdue",action:"call"},
     ],
   },
   dental:{
@@ -411,10 +412,11 @@ const INDUSTRIES={
       availability_source_subfield:"provider_hours",
     },
     auto_config_scenarios:[
-      {id:"dn1",direction:"outbound",condition:"If patient's appointment is in 6 months",instructions:"Text a 6-month cleaning reminder and offer next available slot.",auto:true,rel:"patient",event:"appointment",timing:"in 6 months",action:"text"},
-      {id:"dn2",direction:"outbound",condition:"If patient's appointment just completed in 48h",instructions:"Text a post-visit check-in (sensitivity, comfort, follow-up needed).",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"text"},
-      {id:"dn3",direction:"outbound",condition:"If patient's purchase is overdue",instructions:"Text to follow up on an unscheduled treatment plan (e.g., crown, root canal recommended but not booked).",auto:false,rel:"patient",event:"purchase",timing:"overdue",action:"text"},
-      {id:"dn4",direction:"inbound",condition:"If patient's call is missed",instructions:"Text back instantly apologizing and asking how you can help. Flag dental emergencies for same-day callback.",auto:true,rel:"patient",event:"missed call",timing:"instantly",action:"text"},
+      {id:"dn_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch new-patient inquiries who haven't booked their first cleaning or exam. First touch confirms receipt + insurance; follow-ups offer financing options and answer questions.",cadence:["same day","+1 day","+2 days","+3 days","+7 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"prospect",event:"inquiry",timing:"same day",action:"text"},
+      {id:"dn1",direction:"outbound",condition:"6-Month Recall",instructions:"Text patients due for their 6-month cleaning. Offer next available slot.",auto:true,rel:"patient",event:"appointment",timing:"in 6 months",action:"text"},
+      {id:"dn2",direction:"outbound",condition:"Post-Op Day-1 Check",instructions:"Text 48h post-procedure to check sensitivity, bite, comfort, follow-up needed.",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"text"},
+      {id:"dn3",direction:"outbound",condition:"Unaccepted Treatment Follow-up",instructions:"Text to follow up on an unscheduled treatment plan (e.g., crown, root canal recommended but not booked). Offer financing.",auto:false,rel:"patient",event:"purchase",timing:"overdue",action:"text"},
+      {id:"dn4",direction:"inbound",condition:"Missed Call Reply",instructions:"Text back instantly apologizing and asking how you can help. Flag dental emergencies for same-day callback.",auto:true,rel:"patient",event:"missed call",timing:"instantly",action:"text"},
     ],
   },
   mental_health:{
@@ -467,10 +469,11 @@ const INDUSTRIES={
       availability_source_subfield:"provider_hours",
     },
     auto_config_scenarios:[
-      {id:"mh1",direction:"outbound",condition:"If client's appointment is in 1 week",instructions:"Text a session reminder 24h before. Confirm telehealth link or in-person.",auto:true,rel:"client",event:"appointment",timing:"in 48h",action:"text"},
-      {id:"mh2",direction:"outbound",condition:"If client's appointment is in 2 weeks",instructions:"Between-session check-in: brief, supportive, no clinical content. Reply triggers therapist callback.",auto:false,rel:"client",event:"appointment",timing:"in 2 weeks",action:"text"},
-      {id:"mh3",direction:"outbound",condition:"If client's appointment is overdue",instructions:"Gentle re-engagement after a missed session. Acknowledge it can be hard to come back. Offer easy rebooking. Do not press.",auto:false,rel:"client",event:"appointment",timing:"overdue",action:"text"},
-      {id:"mh4",direction:"inbound",condition:"If client's call is missed",instructions:"Text back instantly with warmth. If language suggests crisis, route to 988 / 911 and flag for immediate clinician callback.",auto:true,rel:"client",event:"missed call",timing:"instantly",action:"text"},
+      {id:"mh_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch new clients who inquired but haven't booked the first session. Gentle cadence — coming back to therapy is hard. First touch confirms receipt + therapist match; follow-ups address insurance / cost / fit questions.",cadence:["same day","+3 days","+7 days","+14 days","+21 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"prospect",event:"inquiry",timing:"same day",action:"text"},
+      {id:"mh1",direction:"outbound",condition:"Next-Session Reminder",instructions:"Text a session reminder 24h before. Confirm telehealth link or in-person.",auto:true,rel:"client",event:"appointment",timing:"in 48h",action:"text"},
+      {id:"mh2",direction:"outbound",condition:"Between-Session Check-in",instructions:"Brief, supportive check-in mid-cycle. No clinical content. Reply triggers therapist callback.",auto:false,rel:"client",event:"appointment",timing:"in 2 weeks",action:"text"},
+      {id:"mh3",direction:"outbound",condition:"No-Show Re-engagement",instructions:"Gentle re-engagement after a missed session. Acknowledge it can be hard to come back. Offer easy rebooking. Do not press.",auto:false,rel:"client",event:"appointment",timing:"overdue",action:"text"},
+      {id:"mh4",direction:"inbound",condition:"Missed Call Reply",instructions:"Text back instantly with warmth. If language suggests crisis, route to 988 / 911 and flag for immediate clinician callback.",auto:true,rel:"client",event:"missed call",timing:"instantly",action:"text"},
     ],
   },
   oncology:{
@@ -522,12 +525,13 @@ const INDUSTRIES={
       availability_source_subfield:"provider_hours",
     },
     auto_config_scenarios:[
-      {id:"on0",direction:"outbound",condition:"If referral received",instructions:"Reach the referred patient within 24h. Run the AI intake checklist (referral, diagnosis, imaging, prior treatments, insurance) and offer currently-available consultation slots so the patient can express preferred slot(s). Add intake + preferred slots to the oncologist-review queue. Do NOT confirm any slot — oncologist decides based on acuity + patient preference.",auto:true,rel:"patient",event:"referral",timing:"next day",action:"text"},
-      {id:"on1",direction:"outbound",condition:"If patient's appointment just completed in 48h",instructions:"Post-treatment 48h check-in. Ask about CTCAE-grade side effects: nausea, fatigue, rash, diarrhea frequency, dyspnea, visual changes, liver symptoms. If concerning, page on-call oncologist and offer earlier visit.",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"call"},
-      {id:"on2",direction:"outbound",condition:"If patient's appointment is in 1 week",instructions:"Confirm next infusion / clinic visit. Verify port access plan, labs in window, and transport.",auto:true,rel:"patient",event:"appointment",timing:"in 1 week",action:"text"},
-      {id:"on3",direction:"outbound",condition:"If patient's appointment is overdue",instructions:"Surveillance overdue. Urgent text to rebook; escalate to oncologist if no response in 48h.",auto:true,rel:"patient",event:"appointment",timing:"overdue",action:"call"},
-      {id:"on4",direction:"outbound",condition:"If patient's check-in is in 1 week",instructions:"PRO collection per trial protocol — symptoms, side effects, quality of life. Recorded for the care team. Press 1 to begin.",auto:true,rel:"patient",event:"check-in",timing:"in 1 week",action:"call"},
-      {id:"on5",direction:"inbound",condition:"If patient's call is missed",instructions:"Text back instantly. If language suggests medical emergency (severe pain, fever in immunocompromised patient, neuro symptoms), route to 911 and page on-call oncologist.",auto:true,rel:"patient",event:"missed call",timing:"instantly",action:"text"},
+      {id:"on_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch second-opinion or referred patients who haven't decided to start treatment with us. Gentle cadence — major decisions take time. First touch confirms receipt; follow-ups offer to discuss family / financial / clinical-trial questions.",cadence:["same day","+3 days","+7 days","+14 days","+21 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"patient",event:"inquiry",timing:"same day",action:"text"},
+      {id:"on0",direction:"outbound",condition:"Referral Intake",instructions:"Reach the referred patient within 24h. Run the AI intake checklist and offer currently-available consultation slots. Add intake to the oncologist-review queue. Do NOT confirm any slot — oncologist decides based on acuity + patient preference.",auto:true,rel:"patient",event:"referral",timing:"next day",action:"text"},
+      {id:"on1",direction:"outbound",condition:"Post-Cycle CTCAE Check",instructions:"48h post-treatment check-in. Ask about CTCAE-grade side effects: nausea, fatigue, rash, diarrhea frequency, dyspnea, visual changes, liver symptoms. If concerning, page on-call oncologist.",auto:true,rel:"patient",event:"appointment",timing:"in 48h",action:"call"},
+      {id:"on2",direction:"outbound",condition:"Pre-Infusion Confirmation",instructions:"Confirm next infusion / clinic visit. Verify port access plan, labs in window, and transport.",auto:true,rel:"patient",event:"appointment",timing:"in 1 week",action:"text"},
+      {id:"on3",direction:"outbound",condition:"Surveillance Imaging Reminder",instructions:"Surveillance overdue. Urgent text to rebook; escalate to oncologist if no response in 48h.",auto:true,rel:"patient",event:"appointment",timing:"overdue",action:"call"},
+      {id:"on4",direction:"outbound",condition:"PRO Collection (Clinical Trial)",instructions:"Per trial protocol — symptoms, side effects, quality of life. Recorded for the care team. Press 1 to begin.",auto:true,rel:"patient",event:"check-in",timing:"in 1 week",action:"call"},
+      {id:"on5",direction:"inbound",condition:"Missed Call Reply",instructions:"Text back instantly. If language suggests medical emergency (severe pain, fever in immunocompromised patient, neuro symptoms), route to 911 and page on-call oncologist.",auto:true,rel:"patient",event:"missed call",timing:"instantly",action:"text"},
     ],
   },
   equipment_rental:{
@@ -569,9 +573,9 @@ const INDUSTRIES={
     business_draft_keys:["billing_policy"],
     scheduling:null, // Equipment rental doesn't expose per-item AI scheduling controls — duration is customer-driven, bookability is uniform across items.
     auto_config_scenarios:[
-      {id:"es1",direction:"outbound",condition:"If client's purchase is in 2 days",instructions:"Text 2 days before rental ends to confirm extension or schedule pickup.",auto:false,rel:"client",event:"purchase",timing:"in 2 days",action:"text"},
-      {id:"es2",direction:"outbound",condition:"If client's delivery completed next day",instructions:"Text next day to check setup went smoothly and operator has what they need.",auto:true,rel:"client",event:"delivery",timing:"next day",action:"text"},
-      {id:"es3",direction:"outbound",condition:"If prospect's lead is next day",instructions:"Follow up on the quote the next day to confirm or adjust.",auto:false,rel:"prospect",event:"lead",timing:"next day",action:"text"},
+      {id:"es_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch quote recipients who haven't confirmed. First touch confirms quote; follow-ups offer time-limited holds, alternate equipment, or address timeline questions.",cadence:["same day","+1 day","+2 days","+3 days","+7 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"prospect",event:"inquiry",timing:"same day",action:"text"},
+      {id:"es1",direction:"outbound",condition:"Pickup or Extend",instructions:"Text 2 days before rental ends to confirm extension or schedule pickup.",auto:false,rel:"client",event:"purchase",timing:"in 2 days",action:"text"},
+      {id:"es2",direction:"outbound",condition:"Day-1 Setup Check",instructions:"Text next day to check setup went smoothly and operator has what they need.",auto:true,rel:"client",event:"delivery",timing:"next day",action:"text"},
     ],
   },
   pharmacy:{
@@ -625,9 +629,9 @@ const INDUSTRIES={
       mock_columns_mapped:["product_name → Name","sku → ID","on_hand → Inventory","price → Price","ndc → NDC code","dosage_form → Dosage"],
     },
     auto_config_scenarios:[
-      {id:"ps1",direction:"outbound",condition:"If patient's purchase is in 2 days",instructions:"Text a refill reminder and confirm delivery address.",auto:true,rel:"patient",event:"purchase",timing:"in 2 days",action:"text"},
-      {id:"ps2",direction:"outbound",condition:"If patient's delivery completed next day",instructions:"Text next day to check delivery arrived safely and answer any questions.",auto:true,rel:"patient",event:"delivery",timing:"next day",action:"text"},
-      {id:"ps3",direction:"outbound",condition:"If prospect's lead is next day",instructions:"Follow up on new inquiry the next day to help them get started.",auto:false,rel:"prospect",event:"lead",timing:"next day",action:"text"},
+      {id:"ps_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch new patients who started a Rx transfer or asked about a new med. First touch confirms transfer in motion; follow-ups offer status on prior auth, cost comparison vs. mail-order, and answer questions.",cadence:["same day","+1 day","+2 days","+3 days","+7 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"prospect",event:"inquiry",timing:"same day",action:"text"},
+      {id:"ps1",direction:"outbound",condition:"Refill Reminder",instructions:"Text a refill reminder 2 days before run-out and confirm delivery address.",auto:true,rel:"patient",event:"purchase",timing:"in 2 days",action:"text"},
+      {id:"ps2",direction:"outbound",condition:"First-Fill Follow-up",instructions:"Text day after first fill to check delivery arrived safely and answer questions.",auto:true,rel:"patient",event:"delivery",timing:"next day",action:"text"},
     ],
   },
   gastroenterology:{
@@ -689,15 +693,16 @@ const INDUSTRIES={
       "Advanced / Therapeutic":["ERCP with sphincterotomy","ESD","EMR","Capsule endoscopy","Motility study"],
     },
     auto_config_scenarios:[
-      {id:"gi0",direction:"inbound",condition:"If a referral is received or caller requests an endoscopy",instructions:"Run the AI intake checklist and offer currently-available slots so the caller can express preferred slot(s). Add intake + preferred slots to the clinician-review queue. Do NOT confirm any slot — clinician decides based on priority + patient preference.",auto:true,rel:"patient",event:"lead",timing:"instantly",action:"text"},
-      {id:"gi_approval",direction:"outbound",condition:"If clinician approves a slot for a queued patient",instructions:"Outbound text/call the patient with the approved slot. If the clinician's choice differs from the patient's preference, briefly explain and offer one alternative. Patient confirms or declines.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
-      {id:"gi_decline",direction:"inbound",condition:"If patient declines the approved slot",instructions:"Re-add to the clinician-review queue with a note (e.g. declined: timing, transport). No AI auto-rebooking — clinician picks the next slot.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
-      {id:"gi1",direction:"outbound",condition:"If endoscopy slot opens in next 48h",instructions:"(Cancellation backfill) Text waitlist patients in clinician-assigned priority order. First YES is handed off to staff for confirmation — no AI auto-booking.",auto:true,rel:"patient",event:"open slot",timing:"in 48h",action:"text"},
-      {id:"gi2",direction:"outbound",condition:"If patient's surveillance is overdue",instructions:"Urgent text to rebook; escalate to physician if no response in 48h.",auto:true,rel:"patient",event:"surveillance",timing:"overdue",action:"text"},
-      {id:"gi3",direction:"outbound",condition:"If patient's procedure is in 48h",instructions:"Pre-op confirmation: NPO started, bowel prep, anticoagulant hold, transport confirmed.",auto:true,rel:"patient",event:"procedure",timing:"in 48h",action:"text"},
-      {id:"gi4",direction:"outbound",condition:"If patient's procedure completed next day",instructions:"Post-op check; book pathology follow-up if indicated.",auto:true,rel:"patient",event:"procedure",timing:"next day",action:"text"},
-      {id:"gi5",direction:"outbound",condition:"If patient's screening is due in 6 months",instructions:"Text reminder to schedule screening endoscopy.",auto:false,rel:"patient",event:"screening",timing:"in 6 months",action:"text"},
-      {id:"gi6",direction:"outbound",condition:"If patient's pathology is abnormal",instructions:"Call to schedule surveillance at recommended interval.",auto:true,rel:"patient",event:"pathology",timing:"instantly",action:"call"},
+      {id:"gi_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch consult patients who haven't scheduled their procedure. First touch confirms consult; follow-ups address bowel-prep / sedation / time-off concerns and offer scheduling help.",cadence:["same day","+1 day","+2 days","+3 days","+7 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"prospect",event:"inquiry",timing:"same day",action:"text"},
+      {id:"gi0",direction:"inbound",condition:"Referral Intake",instructions:"Run the AI intake checklist and offer currently-available slots. Add intake + preferred slots to the clinician-review queue. Do NOT confirm any slot — clinician decides based on priority + patient preference.",auto:true,rel:"patient",event:"lead",timing:"instantly",action:"text"},
+      {id:"gi_approval",direction:"outbound",condition:"Slot Approval Notification",instructions:"Outbound text/call patient with the approved slot. If clinician's choice differs from patient preference, briefly explain and offer one alternative.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
+      {id:"gi_decline",direction:"inbound",condition:"Slot Decline Re-Queue",instructions:"Re-add to the clinician-review queue with a note (e.g. declined: timing, transport). No AI auto-rebooking — clinician picks the next slot.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
+      {id:"gi1",direction:"outbound",condition:"Cancellation Backfill",instructions:"Text waitlist patients in clinician-assigned priority order when a slot opens. First YES is handed off to staff — no AI auto-booking.",auto:true,rel:"patient",event:"open slot",timing:"in 48h",action:"text"},
+      {id:"gi2",direction:"outbound",condition:"Surveillance Reminder",instructions:"Surveillance overdue. Urgent text to rebook; escalate to physician if no response in 48h.",auto:true,rel:"patient",event:"surveillance",timing:"overdue",action:"text"},
+      {id:"gi3",direction:"outbound",condition:"Pre-Procedure Confirmation",instructions:"48h pre-scope: NPO, bowel prep, anticoagulant hold, transport confirmed.",auto:true,rel:"patient",event:"procedure",timing:"in 48h",action:"text"},
+      {id:"gi4",direction:"outbound",condition:"Post-Scope Pathology Follow-up",instructions:"7d post-scope: pathology back, bowel function back to normal, schedule results review if needed.",auto:true,rel:"patient",event:"procedure",timing:"next day",action:"text"},
+      {id:"gi5",direction:"outbound",condition:"Screening Reminder",instructions:"Text reminder to schedule screening endoscopy.",auto:false,rel:"patient",event:"screening",timing:"in 6 months",action:"text"},
+      {id:"gi6",direction:"outbound",condition:"Abnormal Pathology Recall",instructions:"Call to schedule surveillance at recommended interval.",auto:true,rel:"patient",event:"pathology",timing:"instantly",action:"call"},
     ],
   },
   surgery:{
@@ -760,14 +765,15 @@ const INDUSTRIES={
       "Orthopedic":["Total knee replacement","Rotator cuff repair","ACL reconstruction","Spine fusion","Carpal tunnel release"],
     },
     auto_config_scenarios:[
-      {id:"sx6",direction:"outbound",condition:"If referral received",instructions:"Text referred patient within 24h. Run the AI intake checklist and offer currently-available slots so the patient can express preferred slot(s). Add intake + preferred slots to the surgeon-review queue. Do NOT confirm any slot — surgeon decides based on priority + patient preference.",auto:true,rel:"patient",event:"referral",timing:"next day",action:"text"},
-      {id:"sx_approval",direction:"outbound",condition:"If surgeon approves a slot for a queued patient",instructions:"Outbound text/call the patient with the approved slot. If the surgeon's choice differs from the patient's preference, briefly explain and offer one alternative. Patient confirms or declines.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
-      {id:"sx_decline",direction:"inbound",condition:"If patient declines the approved slot",instructions:"Re-add to the surgeon-review queue with a note (e.g. declined: timing, transport). No AI auto-rebooking — surgeon picks the next slot.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
-      {id:"sx1",direction:"outbound",condition:"If OR slot is cancelled same-week",instructions:"(Cancellation backfill) Reach pre-op-ready waitlist patients in surgeon-assigned priority order. First YES is handed off to staff for confirmation — no AI auto-booking.",auto:true,rel:"patient",event:"open slot",timing:"in 7 days",action:"text"},
-      {id:"sx2",direction:"outbound",condition:"If patient's follow-up is overdue",instructions:"Urgent recall; escalate to surgeon if no response in 48h.",auto:true,rel:"patient",event:"follow-up",timing:"overdue",action:"call"},
-      {id:"sx3",direction:"outbound",condition:"If patient's surgery is in 72h",instructions:"Pre-op confirmation: NPO, meds, clearance labs, arrival time, transport.",auto:true,rel:"patient",event:"surgery",timing:"in 72h",action:"text"},
-      {id:"sx4",direction:"outbound",condition:"If patient's surgery completed next day",instructions:"Post-op day 1: pain, complications, discharge plan.",auto:true,rel:"patient",event:"surgery",timing:"next day",action:"call"},
-      {id:"sx5",direction:"outbound",condition:"If patient's clearance is in 2 weeks",instructions:"Confirm all pre-op requirements (labs, clearance, imaging) are in.",auto:false,rel:"patient",event:"clearance",timing:"in 2 weeks",action:"text"},
+      {id:"sx_iqf",direction:"outbound",condition:"Inquiry Follow-up",instructions:"Touch consult patients with surgery recommended but not scheduled. First touch confirms consult; follow-ups address fear / cost / 2nd-opinion concerns and offer scheduling.",cadence:["same day","+1 day","+2 days","+3 days","+7 days"],defaultAttempts:3,maxAttempts:3,auto:true,rel:"prospect",event:"inquiry",timing:"same day",action:"text"},
+      {id:"sx6",direction:"outbound",condition:"Referral Intake",instructions:"Text referred patient within 24h. Run the AI intake checklist and offer currently-available slots. Add intake + preferred slots to the surgeon-review queue.",auto:true,rel:"patient",event:"referral",timing:"next day",action:"text"},
+      {id:"sx_approval",direction:"outbound",condition:"Slot Approval Notification",instructions:"Outbound text/call the patient with the approved slot. If surgeon's choice differs from patient preference, briefly explain and offer one alternative.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
+      {id:"sx_decline",direction:"inbound",condition:"Slot Decline Re-Queue",instructions:"Re-add to the surgeon-review queue with a note (e.g. declined: timing, transport). No AI auto-rebooking — surgeon picks the next slot.",auto:true,rel:"patient",event:"booking",timing:"instantly",action:"text"},
+      {id:"sx1",direction:"outbound",condition:"OR Cancellation Backfill",instructions:"Reach pre-op-ready waitlist patients in surgeon-assigned priority order when an OR slot opens. First YES is handed off to staff.",auto:true,rel:"patient",event:"open slot",timing:"in 7 days",action:"text"},
+      {id:"sx2",direction:"outbound",condition:"Overdue Follow-up Recall",instructions:"Urgent recall; escalate to surgeon if no response in 48h.",auto:true,rel:"patient",event:"follow-up",timing:"overdue",action:"call"},
+      {id:"sx3",direction:"outbound",condition:"Pre-Op Confirmation",instructions:"72h pre-op: NPO, meds, clearance labs, arrival time, transport.",auto:true,rel:"patient",event:"surgery",timing:"in 72h",action:"text"},
+      {id:"sx4",direction:"outbound",condition:"Post-Op Day-1 Check",instructions:"Post-op day 1: pain, complications, discharge plan.",auto:true,rel:"patient",event:"surgery",timing:"next day",action:"call"},
+      {id:"sx5",direction:"outbound",condition:"Pre-Op Clearance Confirmation",instructions:"2 weeks pre-op: confirm all pre-op requirements (labs, clearance, imaging) are in.",auto:false,rel:"patient",event:"clearance",timing:"in 2 weeks",action:"text"},
     ],
   },
 };
@@ -2049,16 +2055,36 @@ function SecretarySettingsScreen({scenarios,setScenarios,industry}){
           {scenarios.length===0?(
             <div className="empty-state">No scenarios yet. Tap "Add scenario" to get started.</div>
           ):(
-            scenarios.map(sc=>(
-              <div key={sc.id} className="scenario-row" onClick={()=>setEditMode({type:"edit",id:sc.id})}>
-                <div className="scenario-row-body">
-                  <div className="scenario-condition">{sc.condition}</div>
-                  <div className="scenario-instructions">{sc.instructions}</div>
-                  <span className={`scenario-badge ${sc.auto?"auto":"manual"}`}>{sc.auto?"Automatic":"Manual"}</span>
+            scenarios.map(sc=>{
+              const hasCadence=Array.isArray(sc.cadence)&&sc.cadence.length>0;
+              const attempts=sc.maxAttempts||sc.defaultAttempts||3;
+              const visibleCadence=hasCadence?sc.cadence.slice(0,attempts).join(" → "):null;
+              const cycleAttempts=(e)=>{
+                e.stopPropagation();
+                setScenarios(prev=>prev.map(s=>s.id===sc.id?{...s,maxAttempts:(attempts%5)+1}:s));
+              };
+              return(
+                <div key={sc.id} className="scenario-row" onClick={()=>setEditMode({type:"edit",id:sc.id})}>
+                  <div className="scenario-row-body">
+                    <div className="scenario-condition">{sc.condition}</div>
+                    {hasCadence&&(
+                      <div style={{fontSize:13,color:"var(--primary-text)",marginTop:2,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                        <span>{visibleCadence}</span>
+                        <span style={{color:"var(--tertiary-text)"}}>·</span>
+                        <span onClick={cycleAttempts} style={{display:"inline-flex",alignItems:"center",gap:3,padding:"1px 4px 1px 6px",background:"var(--surface-darken)",borderRadius:10,border:".5px solid var(--border)",cursor:"pointer"}}>
+                          <span style={{fontSize:13,fontWeight:600,color:"var(--primary-text)"}}>max {attempts}</span>
+                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:14,height:14,borderRadius:7,border:".75px solid var(--primary-text)",fontSize:9}}>▾</span>
+                        </span>
+                        <span style={{fontSize:13,color:"var(--secondary-text)"}}>attempts</span>
+                      </div>
+                    )}
+                    <div className="scenario-instructions">{sc.instructions}</div>
+                    <span className={`scenario-badge ${sc.auto?"auto":"manual"}`}>{sc.auto?"Automatic":"Manual"}</span>
+                  </div>
+                  <span className="scenario-edit-icon">✎</span>
                 </div>
-                <span className="scenario-edit-icon">✎</span>
-              </div>
-            ))
+              );
+            })
           )}
           <button className="add-btn" onClick={()=>setEditMode({type:"voice-input"})}>
             <span className="plus-icon">＋</span> Add scenario
